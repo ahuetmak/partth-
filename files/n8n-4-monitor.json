@@ -1,0 +1,132 @@
+{
+  "name": "PARTTH — Monitor Sistema (cada 15 min)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "minutes", "minutesInterval": 15 }]
+        }
+      },
+      "id": "node-cron",
+      "name": "Cron cada 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://ptfsjqsckjqamaiagidj.supabase.co/rest/v1/scheduled_emails?status=eq.failed&created_at=gte={{ $now.minus({hours: 1}).toISO() }}&select=id,email,type,created_at",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA" },
+            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-check-failed",
+      "name": "Check emails fallados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://ptfsjqsckjqamaiagidj.supabase.co/rest/v1/commitment_fees?status=eq.paid&created_at=gte={{ $now.minus({hours: 1}).toISO() }}&select=id,amount,created_at",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA" },
+            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-check-payments",
+      "name": "Check pagos recientes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const failed = $('Check emails fallados').all();\nconst payments = $('Check pagos recientes').all();\nconst summary = {\n  ts: new Date().toISOString(),\n  emails_fallados: failed.length,\n  pagos_ultima_hora: payments.length,\n  status: failed.length > 0 ? 'ALERTA' : 'OK'\n};\nconsole.log('[PARTTH Monitor]', JSON.stringify(summary));\nreturn [{json: summary}];"
+      },
+      "id": "node-summary",
+      "name": "Resumen sistema",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "check-alert",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "ALERTA",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "node-if-alert",
+      "name": "¿Hay alertas?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.RESEND_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"PARTTH Monitor <support@partth.com>\",\n  \"to\": \"admin@partth.com\",\n  \"subject\": \"🚨 ALERTA PARTTH: {{ $('Resumen sistema').item.json.emails_fallados }} emails fallados\",\n  \"html\": \"<h2>🚨 Alerta PARTTH</h2><p><strong>Emails fallados última hora:</strong> {{ $('Resumen sistema').item.json.emails_fallados }}</p><p><strong>Hora:</strong> {{ $('Resumen sistema').item.json.ts }}</p><p>Revisa: <a href='https://app.supabase.com/project/ptfsjqsckjqamaiagidj'>Supabase Dashboard</a></p>\"\n}",
+        "options": {}
+      },
+      "id": "node-alert-email",
+      "name": "Email alerta admin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 200]
+    }
+  ],
+  "connections": {
+    "Cron cada 15 min": {
+      "main": [[
+        { "node": "Check emails fallados", "type": "main", "index": 0 },
+        { "node": "Check pagos recientes", "type": "main", "index": 0 }
+      ]]
+    },
+    "Check emails fallados": {
+      "main": [[{ "node": "Resumen sistema", "type": "main", "index": 0 }]]
+    },
+    "Check pagos recientes": {
+      "main": [[{ "node": "Resumen sistema", "type": "main", "index": 0 }]]
+    },
+    "Resumen sistema": {
+      "main": [[{ "node": "¿Hay alertas?", "type": "main", "index": 0 }]]
+    },
+    "¿Hay alertas?": {
+      "main": [
+        [{ "node": "Email alerta admin", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "PARTTH" }, { "name": "Monitor" }, { "name": "Automatico" }]
+}

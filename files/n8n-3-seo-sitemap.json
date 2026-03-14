@@ -1,0 +1,78 @@
+{
+  "name": "PARTTH — SEO Sitemap Submit (lunes 6am)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "weeks", "weeksInterval": 1 }]
+        }
+      },
+      "id": "node-cron",
+      "name": "Cron lunes 6am CT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.google.com/ping?sitemap=https://partth.com/sitemap.xml",
+        "options": { "timeout": 10000 }
+      },
+      "id": "node-google",
+      "name": "Ping Google Sitemap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.bing.com/ping?sitemap=https://partth.com/sitemap.xml",
+        "options": { "timeout": 10000 }
+      },
+      "id": "node-bing",
+      "name": "Ping Bing Sitemap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 420]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://ptfsjqsckjqamaiagidj.supabase.co/functions/v1/sitemap",
+        "options": { "timeout": 10000 }
+      },
+      "id": "node-sitemap-refresh",
+      "name": "Refrescar sitemap Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('[PARTTH SEO] Sitemap enviado a Google + Bing:', new Date().toISOString());\nreturn [{json: {status: 'submitted', google: 'ok', bing: 'ok', ts: new Date().toISOString()}}];"
+      },
+      "id": "node-log",
+      "name": "Log SEO Submit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 400]
+    }
+  ],
+  "connections": {
+    "Cron lunes 6am CT": {
+      "main": [[
+        { "node": "Ping Google Sitemap", "type": "main", "index": 0 },
+        { "node": "Ping Bing Sitemap", "type": "main", "index": 0 },
+        { "node": "Refrescar sitemap Supabase", "type": "main", "index": 0 }
+      ]]
+    },
+    "Ping Google Sitemap": {
+      "main": [[{ "node": "Log SEO Submit", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "PARTTH" }, { "name": "SEO" }, { "name": "Automatico" }]
+}

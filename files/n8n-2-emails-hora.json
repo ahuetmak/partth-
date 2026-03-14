@@ -1,0 +1,91 @@
+{
+  "name": "PARTTH — Emails Programados (cada hora)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 1 }]
+        }
+      },
+      "id": "node-cron",
+      "name": "Cron cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ptfsjqsckjqamaiagidj.supabase.co/functions/v1/send-emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      },
+      "id": "node-emails",
+      "name": "Disparar Send Emails",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [
+            {
+              "id": "check-sent",
+              "leftValue": "={{ $json.sent }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      },
+      "id": "node-if",
+      "name": "¿Se enviaron emails?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconsole.log(`[PARTTH Emails] ${result.sent} emails enviados de ${result.total} pendientes`);\nreturn [{json: {status: 'sent', ...result, ts: new Date().toISOString()}}];"
+      },
+      "id": "node-log",
+      "name": "Log éxito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{json: {status: 'nothing_pending', ts: new Date().toISOString()}}];"
+      },
+      "id": "node-noop",
+      "name": "Nada pendiente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 420]
+    }
+  ],
+  "connections": {
+    "Cron cada hora": {
+      "main": [[{ "node": "Disparar Send Emails", "type": "main", "index": 0 }]]
+    },
+    "Disparar Send Emails": {
+      "main": [[{ "node": "¿Se enviaron emails?", "type": "main", "index": 0 }]]
+    },
+    "¿Se enviaron emails?": {
+      "main": [
+        [{ "node": "Log éxito", "type": "main", "index": 0 }],
+        [{ "node": "Nada pendiente", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "PARTTH" }, { "name": "Emails" }, { "name": "Automatico" }]
+}

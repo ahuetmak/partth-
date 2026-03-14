@@ -1,0 +1,104 @@
+{
+  "name": "PARTTH — Shovels Ingest Diario 9am",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 24 }]
+        }
+      },
+      "id": "node-cron",
+      "name": "Cron 9am CT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ptfsjqsckjqamaiagidj.supabase.co/functions/v1/shovels-ingest",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": { "timeout": 60000 }
+      },
+      "id": "node-shovels",
+      "name": "Trigger Shovels Ingest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true },
+          "conditions": [
+            {
+              "id": "check-ingested",
+              "leftValue": "={{ $json.ingested }}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ]
+        }
+      },
+      "id": "node-if",
+      "name": "¿Hay permisos nuevos?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.RESEND_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"PARTTH Bot <support@partth.com>\",\n  \"to\": \"admin@partth.com\",\n  \"subject\": \"✅ Shovels: {{ $('Trigger Shovels Ingest').item.json.ingested }} nuevos permisos TX\",\n  \"html\": \"<h3>Ingest completado</h3><p><strong>Nuevos:</strong> {{ $('Trigger Shovels Ingest').item.json.ingested }}</p><p><strong>Duplicados:</strong> {{ $('Trigger Shovels Ingest').item.json.skipped }}</p><p><strong>Hora:</strong> {{ $now.toISO() }}</p>\"\n}",
+        "options": {}
+      },
+      "id": "node-email",
+      "name": "Email admin — nuevos permisos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('[PARTTH] Shovels: sin permisos nuevos hoy -', new Date().toISOString());\nreturn [{json: {status: 'nothing_new', ts: new Date().toISOString()}}];"
+      },
+      "id": "node-noop",
+      "name": "Log — sin cambios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 420]
+    }
+  ],
+  "connections": {
+    "Cron 9am CT": {
+      "main": [[{ "node": "Trigger Shovels Ingest", "type": "main", "index": 0 }]]
+    },
+    "Trigger Shovels Ingest": {
+      "main": [[{ "node": "¿Hay permisos nuevos?", "type": "main", "index": 0 }]]
+    },
+    "¿Hay permisos nuevos?": {
+      "main": [
+        [{ "node": "Email admin — nuevos permisos", "type": "main", "index": 0 }],
+        [{ "node": "Log — sin cambios", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "tags": [{ "name": "PARTTH" }, { "name": "Shovels" }, { "name": "Automatico" }]
+}
