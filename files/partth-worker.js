@@ -27,6 +27,10 @@ function buildSitemap() {
     ['/pintura-comercial', '0.9', 'weekly'],
     ['/demolicion-residencial', '0.9', 'weekly'],
     ['/demolicion-comercial', '0.9', 'weekly'],
+    ['/quien-somos', '0.6', 'monthly'],
+    ['/privacy-policy', '0.3', 'monthly'],
+    ['/terms-of-service', '0.3', 'monthly'],
+    ['/cookie-policy', '0.3', 'monthly'],
   ].map(([loc, priority, changefreq]) =>
     `  <url><loc>https://partth.com${loc}</loc><lastmod>${today}</lastmod><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`
   ).join('\n');
