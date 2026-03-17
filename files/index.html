@@ -139,6 +139,12 @@ h1{font-family:"Syne",sans-serif;font-weight:800;font-size:clamp(40px,8vw,84px);
 .pp-btn-wrap{border-radius:12px;overflow:hidden;min-height:50px;background:rgba(255,255,255,.03);border:1px solid var(--border);display:flex;align-items:center;justify-content:center}
 .pp-loading{font-size:11px;color:var(--muted);font-family:"DM Mono",monospace}
 .plan-note{text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.18);font-family:"DM Mono",monospace}
+.plan-selectable{cursor:pointer;position:relative}
+.plan-selectable:hover{border-color:rgba(255,255,255,.15)}
+.plan-selectable.selected{border-color:var(--teal);box-shadow:0 0 0 1px rgba(0,212,170,.3)}
+.plan-select-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:12px;font-family:"DM Mono",monospace;opacity:.7}
+.plan-selectable.selected .plan-select-hint{color:var(--teal);opacity:1}
+.pp-unified-wrap{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:16px;padding:24px;margin-top:24px}
 .btn-elite{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:"Outfit",sans-serif;background:rgba(124,58,237,.15);color:var(--purple);border:1px solid rgba(124,58,237,.35);transition:opacity .2s}
 .btn-elite:hover{opacity:.8}
 
@@ -409,7 +415,7 @@ footer a:hover{color:#fff}
       </div>
       <div class="plans-grid">
         <!-- Esencial -->
-        <div class="plan">
+        <div class="plan plan-selectable" data-plan="essential" data-amount="75" data-desc="Plan Esencial PARTTH" onclick="selectPlan('essential',75)">
           <div class="plan-name" style="color:var(--amber)">Esencial</div>
           <div class="plan-audience">Contratistas solos o equipos pequeños</div>
           <div class="plan-price" style="color:var(--amber)">$75<span>/mes</span></div>
@@ -421,11 +427,11 @@ footer a:hover{color:#fff}
             <li style="color:rgba(255,255,255,.7)">$40 garantizados por cotización</li>
             <li style="color:rgba(255,255,255,.7)">Sin contrato anual · Cancela cuando quieras</li>
           </ul>
-          <div class="pp-btn-wrap" id="pp-essential"><span class="pp-loading">Cargando pago seguro…</span></div>
+          <p class="plan-select-hint">Selecciona para pagar →</p>
           <p class="plan-note">PayPal · Venmo · Cancela cuando quieras</p>
         </div>
         <!-- Profesional -->
-        <div class="plan popular">
+        <div class="plan plan-selectable popular" data-plan="professional" data-amount="150" data-desc="Plan Profesional PARTTH" onclick="selectPlan('professional',150)">
           <div class="plan-badge" style="background:rgba(0,212,170,.1);color:var(--teal);border:1px solid rgba(0,212,170,.25)">MÁS POPULAR</div>
           <div class="plan-name" style="color:var(--teal)">Profesional</div>
           <div class="plan-audience">Empresas en crecimiento</div>
@@ -439,7 +445,7 @@ footer a:hover{color:#fff}
             <li style="color:rgba(255,255,255,.7)">Dashboard de seguimiento de proyectos</li>
             <li style="color:rgba(255,255,255,.7)">Soporte prioritario 24h</li>
           </ul>
-          <div class="pp-btn-wrap" id="pp-professional"><span class="pp-loading">Cargando pago seguro…</span></div>
+          <p class="plan-select-hint">Selecciona para pagar →</p>
           <p class="plan-note">PayPal · Venmo · Cancela cuando quieras</p>
         </div>
         <!-- Elite -->
@@ -459,6 +465,13 @@ footer a:hover{color:#fff}
           <button class="btn-elite" onclick="window.location.href='mailto:support@partth.com?subject=Plan Elite PARTTH'">Contactar para Elite →</button>
           <p class="plan-note">Plan personalizado · support@partth.com</p>
         </div>
+      </div>
+
+      <!-- UN SOLO BOTÓN PAYPAL PARA PLANES -->
+      <div id="pp-unified-plans" class="pp-unified-wrap" style="display:none">
+        <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:12px;text-align:center;letter-spacing:.08em">PAGA CON PAYPAL</div>
+        <div id="pp-btn-plans" style="min-height:50px;display:flex;align-items:center;justify-content:center;max-width:320px;margin:0 auto"></div>
+        <p style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.18);font-family:'DM Mono',monospace">PayPal · Venmo · Pago seguro</p>
       </div>
 
       <!-- VS TABLE -->
@@ -572,7 +585,7 @@ footer a:hover{color:#fff}
     <!-- PayPal commitment button -->
     <div style="background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px">
       <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:14px;text-align:center;letter-spacing:.08em">PAGA TU CUOTA DE COMPROMISO</div>
-      <div id="pp-commitment" style="min-height:50px;display:flex;align-items:center;justify-content:center">
+      <div id="pp-btn-cotizacion" style="min-height:50px;display:flex;align-items:center;justify-content:center">
         <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">Cargando pago seguro…</span>
       </div>
       <p style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,.18);font-family:'DM Mono',monospace">SSL 256-bit · Procesado de forma segura</p>
@@ -609,30 +622,52 @@ footer a:hover{color:#fff}
   </button>
 </div>
 
-<!-- PAYPAL SDK -->
+<!-- PAYPAL SDK — UN SOLO BOTÓN DINÁMICO -->
 <script>
+window.PAYMENT_CTX={item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};
+function getPaymentCtx(){return window.PAYMENT_CTX;}
+function selectPlan(plan,amount){
+  document.querySelectorAll('.plan-selectable').forEach(function(p){p.classList.remove('selected');});
+  var el=document.querySelector('.plan-selectable[data-plan="'+plan+'"]');
+  if(el){el.classList.add('selected');}
+  window.PAYMENT_CTX={item:plan,amount:amount,desc:el?el.getAttribute('data-desc'):'Plan PARTTH'};
+  document.getElementById('pp-unified-plans').style.display='block';
+  if(window.paypal&&window.paypalUnifiedInstance){renderPayPalUnified('pp-btn-plans');}
+}
+function renderPayPalUnified(containerId){
+  var el=document.getElementById(containerId);
+  if(!el||!window.paypal)return;
+  el.innerHTML='';
+  var ctx=getPaymentCtx();
+  if(!ctx||!ctx.amount)return;
+  try{
+    paypal.Buttons({
+      createOrder:function(data,actions){
+        return actions.order.create({
+          purchase_units:[{description:ctx.desc||'PARTTH',amount:{currency_code:'USD',value:String(ctx.amount)}}]
+        });
+      },
+      onApprove:function(data,actions){
+        if(window.saveProjectData){window.saveProjectData();}
+        window.fbq&&fbq('track','Purchase',{value:ctx.amount,currency:'USD'});
+        return actions.order.capture().then(function(details){alert('Pago completado. Te contactaremos pronto.');});
+      },
+      style:{color:'gold',shape:'rect',label:'paypal'}
+    }).render('#'+containerId);
+  }catch(e){console.warn('PayPal render:',e);el.innerHTML='<a href="mailto:support@partth.com" style="display:block;background:var(--amber);color:#000;text-align:center;padding:13px;border-radius:10px;font-weight:700;text-decoration:none">Pagar vía email →</a>';}
+}
 window.addEventListener('load',function(){
   var s=document.createElement('script');
-  s.src='https://www.paypal.com/sdk/js?client-id=BAAJO9XNj_hl0OTC0BszJykUP5KULeKU9BthFpOmtF03fkjBWm9YKqWurOuu_9FfhpinYyCodtNPsOq7Vk&components=hosted-buttons&enable-funding=venmo&currency=USD';
+  s.src='https://www.paypal.com/sdk/js?client-id=BAAJO9XNj_hl0OTC0BszJykUP5KULeKU9BthFpOmtF03fkjBWm9YKqWurOuu_9FfhpinYyCodtNPsOq7Vk&components=buttons&enable-funding=venmo&currency=USD';
   s.onload=function(){
-    renderPayPal('pp-commitment','RKT75HMW7LLHQ');
-    renderPayPal('pp-essential','7M2X9GA5F9M3N');
-    renderPayPal('pp-professional','88XY7WUPNP2EU');
+    window.paypalUnifiedInstance=true;
+    renderPayPalUnified('pp-btn-cotizacion');
   };
   s.onerror=function(){
-    ['pp-commitment','pp-essential','pp-professional'].forEach(function(id){
-      var el=document.getElementById(id);
-      if(el){el.innerHTML='<a href="mailto:support@partth.com" style="display:block;background:var(--amber);color:#000;text-align:center;padding:13px;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px">Pagar vía email →</a>';}
-    });
+    ['pp-btn-cotizacion','pp-btn-plans'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<a href="mailto:support@partth.com" style="display:block;background:var(--amber);color:#000;text-align:center;padding:13px;border-radius:10px;font-weight:700;text-decoration:none">Pagar vía email →</a>';});
   };
   document.body.appendChild(s);
 });
-function renderPayPal(id,buttonId){
-  var el=document.getElementById(id);
-  if(!el)return;
-  el.innerHTML='';
-  try{paypal.HostedButtons({hostedButtonId:buttonId}).render('#'+id);}catch(e){console.warn('PayPal render:',id,e);}
-}
 </script>
 
 <!-- SUPABASE AUTH + APP -->
@@ -678,8 +713,9 @@ function goPage(name){
   if(p){
     p.classList.add('active');
     window.scrollTo(0,0);
-    if(name==='cotizacion'&&window.paypal){
-      setTimeout(function(){renderPayPal('pp-commitment','RKT75HMW7LLHQ');},300);
+    if(name==='cotizacion'){
+      window.PAYMENT_CTX={item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};
+      if(window.paypal){setTimeout(function(){renderPayPalUnified('pp-btn-cotizacion');},300);}
     }
   }
 }
