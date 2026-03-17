@@ -740,7 +740,11 @@ function renderPayPalUnified(containerId){
     paypal.Buttons({
       createOrder:function(data,actions){
         return actions.order.create({
-          purchase_units:[{description:ctx.desc||'PARTTH',amount:{currency_code:'USD',value:String(ctx.amount)}}]
+          purchase_units:[{
+            description:ctx.desc||'PARTTH',
+            amount:{currency_code:'USD',value:String(ctx.amount)},
+            custom_id:JSON.stringify({type:ctx.item||'commitment',amount:ctx.amount})
+          }]
         });
       },
       onApprove:function(data,actions){
