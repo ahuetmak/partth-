@@ -1,17 +1,20 @@
-# IndexNow ping + verificación SEO tras deploy
+# IndexNow ping tras deploy (corre después de deploy-cloudflare)
 name: SEO IndexNow
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Deploy to Cloudflare Pages"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 jobs:
   indexnow:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - name: Esperar deploy Cloudflare Pages
-        run: sleep 90
+      - name: Esperar propagación
+        run: sleep 60
 
       - name: Ping IndexNow (Bing, Yandex, Seznam)
         run: |
