@@ -804,12 +804,32 @@ function handleGoogleLogin(){
 
 // PAGE ROUTING
 var ROUTES={landing:'/',cotizacion:'/cotizacion','quien-somos':'/quien-somos',privacy:'/privacy-policy',terms:'/terms-of-service',cookie:'/cookie-policy'};
+var PAGE_META={
+  landing:{title:'PARTTH — Pintura y Demolición en Texas | Cotizaciones Verificadas',desc:'Conectamos propietarios con los mejores contratistas de pintura y demolición en Texas. Houston, Dallas, Austin, San Antonio. Solicita tu cotización desde $50.'},
+  cotizacion:{title:'Solicitar Cotización | PARTTH Texas',desc:'Solicita tu cotización de pintura o demolición en Texas. Cuota de compromiso $50. Profesionales verificados en 24-48h.'},
+  'quien-somos':{title:'Quiénes Somos | PARTTH — Contratistas Texas',desc:'PARTTH conecta propietarios con contratistas verificados de pintura y demolición en Texas. Houston, Dallas, Austin, San Antonio.'},
+  privacy:{title:'Política de Privacidad | PARTTH',desc:'Política de privacidad de PARTTH. Cómo recopilamos, usamos y protegemos tus datos.'},
+  terms:{title:'Términos de Servicio | PARTTH',desc:'Términos de servicio de PARTTH. Condiciones de uso de la plataforma.'},
+  cookie:{title:'Política de Cookies | PARTTH',desc:'Política de cookies de PARTTH. Uso de cookies en nuestra plataforma.'}
+};
+function updatePageMeta(name){
+  var m=PAGE_META[name]||PAGE_META.landing;
+  var path=ROUTES[name]||'/';
+  var url='https://partth.com'+(path==='/'?'':path);
+  document.title=m.title;
+  var d=document.querySelector('meta[name="description"]');if(d)d.setAttribute('content',m.desc);
+  var og=document.querySelector('meta[property="og:title"]');if(og)og.setAttribute('content',m.title);
+  var od=document.querySelector('meta[property="og:description"]');if(od)od.setAttribute('content',m.desc);
+  var ou=document.querySelector('meta[property="og:url"]');if(ou)ou.setAttribute('content',url);
+  var c=document.querySelector('link[rel="canonical"]');if(c)c.setAttribute('href',url);
+}
 function goPage(name){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   var p=document.getElementById('page-'+name);
   if(p){
     p.classList.add('active');
     window.scrollTo(0,0);
+    updatePageMeta(name);
     var path=ROUTES[name]||'/';
     if(window.history&&window.history.pushState){window.history.pushState({},'',path);}
     if(name==='cotizacion'){

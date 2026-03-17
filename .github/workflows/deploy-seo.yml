@@ -1,0 +1,37 @@
+# IndexNow ping + verificación SEO tras deploy
+name: SEO IndexNow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  indexnow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Esperar deploy Cloudflare Pages
+        run: sleep 90
+
+      - name: Ping IndexNow (Bing, Yandex, Seznam)
+        run: |
+          curl -X POST "https://api.indexnow.org/indexnow" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "host": "partth.com",
+              "key": "a7f3c9e2b1d40856f2e9a3c7b5d1e4f8",
+              "keyLocation": "https://partth.com/a7f3c9e2b1d40856f2e9a3c7b5d1e4f8.txt",
+              "urlList": [
+                "https://partth.com/",
+                "https://partth.com/cotizacion",
+                "https://partth.com/quien-somos",
+                "https://partth.com/houston",
+                "https://partth.com/dallas",
+                "https://partth.com/austin",
+                "https://partth.com/san-antonio",
+                "https://partth.com/pintura-residencial",
+                "https://partth.com/pintura-comercial",
+                "https://partth.com/demolicion-residencial",
+                "https://partth.com/demolicion-comercial"
+              ]
+            }'
