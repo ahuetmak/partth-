@@ -1,0 +1,7 @@
+name = "partth-worker"
+main = "files/partth-worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
