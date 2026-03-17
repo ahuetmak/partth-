@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - copilot/deploy-cloudflare-page
   workflow_dispatch:
 
 jobs:
