@@ -3,9 +3,15 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
 
 /sitemap.xml
   Content-Type: application/xml
+  Cache-Control: public, max-age=3600
 
 /robots.txt
   Content-Type: text/plain
+  Cache-Control: public, max-age=86400
