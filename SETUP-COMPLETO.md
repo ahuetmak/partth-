@@ -73,7 +73,28 @@ Tienes 4 JSON en `files/`. Importa cada uno en tu instancia N8N:
 
 ---
 
-## 4. Resend (emails)
+## 4. Google OAuth (botón Entrar)
+
+Para que el botón "Entrar con Google" funcione:
+
+**Supabase Dashboard** → Authentication → URL Configuration:
+- **Site URL:** `https://partth.com`
+- **Redirect URLs:** añade `https://partth.com` y `https://partth.com/`
+
+**Supabase** → Authentication → Providers → Google:
+- Activa el proveedor
+- Añade Client ID y Client Secret de Google Cloud Console
+
+**Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com)):
+1. APIs & Services → Credentials → Create Credentials → OAuth client ID
+2. Tipo: Web application
+3. **Authorized JavaScript origins:** `https://partth.com`, `https://www.partth.com`
+4. **Authorized redirect URIs:** `https://ptfsjqsckjqamaiagidj.supabase.co/auth/v1/callback`
+5. Copia Client ID y Client Secret a Supabase
+
+---
+
+## 5. Resend (emails)
 
 Los workflows N8N y la Edge Function `send-emails` usan Resend.
 
@@ -87,7 +108,7 @@ Los workflows N8N y la Edge Function `send-emails` usan Resend.
 
 ---
 
-## 5. admin@partth.com
+## 6. admin@partth.com
 
 Los workflows envían alertas a `admin@partth.com`. Cambia en los JSON si usas otro email:
 - n8n-1-shovels-diario.json
