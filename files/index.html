@@ -766,7 +766,8 @@ window.addEventListener('load',function(){
   s.src='https://www.paypal.com/sdk/js?client-id=BAAJO9XNj_hl0OTC0BszJykUP5KULeKU9BthFpOmtF03fkjBWm9YKqWurOuu_9FfhpinYyCodtNPsOq7Vk&components=buttons&enable-funding=venmo&currency=USD';
   s.onload=function(){
     window.paypalUnifiedInstance=true;
-    renderPayPalUnified('pp-btn-cotizacion');
+    var cotizacionActive=document.getElementById('page-cotizacion')&&document.getElementById('page-cotizacion').classList.contains('active');
+    if(cotizacionActive){window.PAYMENT_CTX=window.PAYMENT_CTX||{item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};renderPayPalUnified('pp-btn-cotizacion');}
   };
   s.onerror=function(){
     ['pp-btn-cotizacion','pp-btn-plans'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<a href="mailto:support@partth.com" style="display:block;background:var(--amber);color:#000;text-align:center;padding:13px;border-radius:10px;font-weight:700;text-decoration:none">Pagar vía email →</a>';});
@@ -781,13 +782,30 @@ var SUPA_URL='https://ptfsjqsckjqamaiagidj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA';
 var supa=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 
-// Auth state
-supa.auth.onAuthStateChange(function(event,session){
-  updateAuthUI(session?session.user:null);
-});
-supa.auth.getSession().then(function(r){
-  updateAuthUI(r.data.session?r.data.session.user:null);
-});
+// Auth state + OAuth callback (intercambio de código al volver de Google)
+(function(){
+  var params=new URLSearchParams(window.location.search);
+  var code=params.get('code');
+  var error=params.get('error');
+  if(error){
+    console.warn('Auth error:',error,params.get('error_description'));
+    window.history.replaceState({},'',window.location.pathname||'/');
+  }
+  if(code){
+    supa.auth.exchangeCodeForSession(code).then(function(r){
+      if(r.error)console.warn('Auth exchange error:',r.error);
+      window.history.replaceState({},'',window.location.pathname||'/');
+      updateAuthUI(r.data.session?r.data.session.user:null);
+    });
+    return;
+  }
+  supa.auth.onAuthStateChange(function(event,session){
+    updateAuthUI(session?session.user:null);
+  });
+  supa.auth.getSession().then(function(r){
+    updateAuthUI(r.data.session?r.data.session.user:null);
+  });
+})();
 
 function updateAuthUI(user){
   var btn=document.getElementById('btn-google-login');
@@ -808,7 +826,9 @@ function updateAuthUI(user){
 }
 
 function handleGoogleLogin(){
-  supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});
+  var origin=window.location.origin;
+  var redirectTo=(origin.indexOf('partth.com')!==-1)?'https://partth.com':origin;
+  supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo}});
 }
 
 // PAGE ROUTING
