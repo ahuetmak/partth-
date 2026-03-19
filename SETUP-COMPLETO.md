@@ -108,7 +108,26 @@ Los workflows N8N y la Edge Function `send-emails` usan Resend.
 
 ---
 
-## 6. admin@partth.com
+## 6. Ingest Permits (Dallas + Austin → raw_signals)
+
+**Script:** `scripts/ingest-permits/`
+
+**GitHub Actions:** El workflow `ingest-permits.yml` corre diario a las 9:00 UTC.
+
+**Secret requerido en GitHub:**
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase → Settings → API → service_role (secret)
+
+**Ejecución manual local:**
+```bash
+cd scripts/ingest-permits
+cp .env.example .env
+# Añadir SUPABASE_SERVICE_ROLE_KEY
+npm install && npm run ingest
+```
+
+---
+
+## 7. admin@partth.com
 
 Los workflows envían alertas a `admin@partth.com`. Cambia en los JSON si usas otro email:
 - n8n-1-shovels-diario.json

@@ -1,0 +1,18 @@
+{
+  "name": "partth-ingest-permits",
+  "version": "1.0.0",
+  "description": "CRON job: Dallas + Austin permits → raw_signals",
+  "type": "module",
+  "scripts": {
+    "ingest": "tsx src/ingest.ts",
+    "ingest:dry": "DRY_RUN=1 tsx src/ingest.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.0.0"
+  }
+}
