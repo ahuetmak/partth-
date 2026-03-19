@@ -27,8 +27,53 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-:root{--bg:#04040a;--amber:#F5A623;--teal:#00D4AA;--purple:#7C3AED;--orange:#FF6B35;--border:rgba(255,255,255,.07);--muted:rgba(255,255,255,.45)}
-body{background:var(--bg);color:#fff;font-family:"Outfit",sans-serif;overflow-x:hidden}
+:root,.theme-dark{--bg:#04040a;--amber:#F5A623;--teal:#00D4AA;--purple:#7C3AED;--orange:#FF6B35;--border:rgba(255,255,255,.07);--muted:rgba(255,255,255,.45);--nav-bg:rgba(4,4,10,.92)}
+.theme-light{--bg:#f8f9fc;--amber:#d4890a;--teal:#00997a;--purple:#5b21b6;--orange:#e55a2b;--border:rgba(0,0,0,.08);--muted:rgba(0,0,0,.55);--nav-bg:rgba(255,255,255,.95)}
+body{background:var(--bg);color:var(--text,inherit);font-family:"Outfit",sans-serif;overflow-x:hidden;transition:background .3s,color .3s}
+.theme-light body{--text:#1a1a24}
+.theme-light .nav-logo span,.theme-light h1,.theme-light .sec-h,.theme-light .plan-name,.theme-light .svc-title{color:#1a1a24}
+.theme-light .hero-sub,.theme-light .sec-sub,.theme-light .svc-desc,.theme-light .plan-desc,.theme-light .step-text{color:var(--muted)}
+.theme-light .nav-links a{color:var(--muted)}
+.theme-light .nav-links a:hover{color:#1a1a24}
+.theme-light #btn-google-login{color:var(--muted);border-color:var(--border)}
+.theme-light #btn-google-login:hover{border-color:rgba(0,0,0,.2);color:#1a1a24}
+.theme-light .stat-box,.theme-light .plan,.theme-light .model-box,.theme-light .how-col,.theme-light .svc-card{background:rgba(0,0,0,.03);border-color:var(--border)}
+.theme-light .strip{border-color:rgba(0,212,170,.2);background:rgba(0,212,170,.04)}
+.theme-light body::before{background:radial-gradient(ellipse,rgba(245,166,35,.08),transparent 70%)}
+.theme-light body::after{background:radial-gradient(ellipse,rgba(0,212,170,.06),transparent 70%)}
+.theme-light nav{background:var(--nav-bg);border-color:var(--border)}
+.theme-light footer{border-color:var(--border)}
+.theme-light .btn-ghost{border-color:var(--border);color:#1a1a24}
+.theme-light .btn-ghost:hover{border-color:rgba(0,0,0,.25)}
+.theme-light .aud-btn{color:var(--muted)}
+.theme-light .aud-btn.active{background:var(--amber);color:#000}
+.theme-light .strip-item{color:var(--teal)}
+.theme-light .sec-label{color:var(--amber)}
+.theme-light .stat-n{color:var(--amber)}
+.theme-light .stat-l,.theme-light .model-label,.theme-light .model-sub{color:var(--muted)}
+.theme-light .step-title{color:#1a1a24}
+.theme-light .svc-list li,.theme-light .model-amount{color:rgba(0,0,0,.8)}
+.theme-light .cot-card,.theme-light input,.theme-light select,.theme-light textarea{background:rgba(255,255,255,.9);border-color:rgba(0,0,0,.1);color:#1a1a24}
+.theme-light .cot-card label{color:var(--muted)}
+.theme-light #chat-box{background:#fff;border-color:rgba(0,0,0,.1)}
+.theme-light .ch-msg{background:rgba(0,0,0,.06);color:#1a1a24}
+.theme-light .ch-bot{background:rgba(0,212,170,.08);color:#1a1a24}
+.theme-light .foot-trust,.theme-light .foot-badges{color:var(--muted)}
+.theme-light .foot-badge{border-color:var(--border)}
+.theme-light .plan-selectable{border-color:var(--border);background:rgba(0,0,0,.02)}
+.theme-light .plan-selectable.selected{border-color:var(--teal);background:rgba(0,212,170,.06)}
+.theme-light .plan-selectable .plan-name,.theme-light .plan-selectable .plan-amount{color:#1a1a24}
+.theme-light .plan-selectable .plan-desc{color:var(--muted)}
+.theme-light .page h1,.theme-light .page h2,.theme-light .page p,.theme-light .page li{color:inherit}
+.theme-light .page h1{color:#1a1a24}
+.theme-light .page h2{color:rgba(0,0,0,.8)}
+.theme-light .page p,.theme-light .page li{color:var(--muted)}
+.theme-light .page a{color:var(--teal)}
+.theme-light .page a:hover{color:var(--amber)}
+.theme-light .nav-utils{display:flex;align-items:center;gap:12px}
+.theme-light .lang-btn,.theme-light .theme-btn{background:rgba(0,0,0,.05);border:1px solid var(--border);color:var(--muted)}
+.theme-light .lang-btn:hover,.theme-light .theme-btn:hover{background:rgba(0,0,0,.08);color:#1a1a24}
+.theme-light .lang-btn.active,.theme-light .theme-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
 body::before{content:"";position:fixed;top:-40%;left:-20%;width:70%;height:70%;background:radial-gradient(ellipse,rgba(245,166,35,.06),transparent 70%);pointer-events:none;z-index:0}
 body::after{content:"";position:fixed;bottom:-30%;right:-20%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(0,212,170,.05),transparent 70%);pointer-events:none;z-index:0}
 
@@ -41,8 +86,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:14px 32px;display:fl
 .nav-links{display:flex;gap:24px;list-style:none;align-items:center}
 .nav-links a{font-size:12px;color:var(--muted);text-decoration:none;font-family:"DM Mono",monospace;letter-spacing:.05em;transition:color .2s}
 .nav-links a:hover{color:#fff}
-#btn-google-login{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:12px;cursor:pointer;font-family:"Outfit",sans-serif;transition:all .2s;display:flex;align-items:center;gap:6px}
+.nav-utils{display:flex;align-items:center;gap:10px}
+.lang-btn,.theme-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:100px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:"DM Mono",monospace;color:var(--muted);transition:all .2s}
+.lang-btn:hover,.theme-btn:hover{border-color:rgba(255,255,255,.25);color:#fff}
+.lang-btn.active,.theme-btn.active{background:var(--teal);border-color:var(--teal);color:#000}
+#btn-google-login{background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:100px;padding:8px 16px;font-size:12px;cursor:pointer;font-family:"Outfit",sans-serif;transition:all .2s;display:flex;align-items:center;gap:6px;position:relative;z-index:10;pointer-events:auto;outline:none}
 #btn-google-login:hover{border-color:rgba(255,255,255,.25);color:#fff}
+#btn-google-login:focus{outline:2px solid var(--teal);outline-offset:2px}
 .btn-cta-nav{background:var(--amber);color:#000;padding:9px 22px;border-radius:100px;font-size:13px;font-weight:700;text-decoration:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;transition:opacity .2s}
 .btn-cta-nav:hover{opacity:.85}
 
@@ -278,6 +328,9 @@ footer a:hover{color:#fff}
 </style>
 </head>
 <body>
+<script>
+(function(){var t=localStorage.getItem('partth-theme')||(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'theme-dark':'theme-light');document.documentElement.classList.add(t);})();
+</script>
 <div class="scan"></div>
 
 <!-- NAV -->
@@ -287,17 +340,22 @@ footer a:hover{color:#fff}
     <span>PART<em>TH</em></span>
   </a>
   <ul class="nav-links">
-    <li><a href="#como">Cómo Funciona</a></li>
-    <li><a href="#servicios">Servicios</a></li>
-    <li><a href="#planes">Contratistas</a></li>
+    <li><a href="#como" data-i18n="nav.how">Cómo Funciona</a></li>
+    <li><a href="#servicios" data-i18n="nav.services">Servicios</a></li>
+    <li><a href="#planes" data-i18n="nav.plans">Contratistas</a></li>
   </ul>
+  <div class="nav-utils">
+    <button class="lang-btn active" data-lang="es" onclick="setLang('es')" title="Español">ES</button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">EN</button>
+    <button class="theme-btn" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema" aria-label="Tema">🌙</button>
+  </div>
   <div style="display:flex;align-items:center;gap:10px">
-    <button id="btn-google-login" onclick="handleGoogleLogin()">
+    <button type="button" id="btn-google-login" role="button" tabindex="0" onclick="handleGoogleLogin();return false">
       <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      <span>Entrar</span>
+      <span data-i18n="nav.entrar">Entrar</span>
     </button>
-    <a href="/quien-somos" onclick="goPage('quien-somos');return false" style="font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;margin-right:16px">Quiénes somos</a>
-    <button class="btn-cta-nav" onclick="goPage('cotizacion');fbq&&fbq('track','Lead')">Pedir Cotización →</button>
+    <a href="/quien-somos" onclick="goPage('quien-somos');return false" class="nav-link-about" data-i18n="nav.quienes">Quiénes somos</a>
+    <button class="btn-cta-nav" onclick="goPage('cotizacion');fbq&&fbq('track','Lead')" data-i18n="nav.cta">Pedir Cotización →</button>
   </div>
 </nav>
 
@@ -780,7 +838,7 @@ window.addEventListener('load',function(){
 <script>
 var SUPA_URL='https://ptfsjqsckjqamaiagidj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA';
-var supa=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+var supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{flowType:'pkce',detectSessionInUrl:true}});
 
 // Auth state + OAuth callback (intercambio de código al volver de Google)
 (function(){
@@ -818,7 +876,8 @@ function updateAuthUI(user){
     btn.style.color='var(--teal)';
     btn.style.borderColor='rgba(0,212,170,.3)';
   } else {
-    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> <span>Entrar</span>';
+    var lang=localStorage.getItem('partth-lang')||'es';var t=(LANG&&LANG[lang]&&LANG[lang]['nav.entrar'])||'Entrar';
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> <span data-i18n="nav.entrar">'+t+'</span>';
     btn.onclick=handleGoogleLogin;
     btn.style.color='var(--muted)';
     btn.style.borderColor='var(--border)';
@@ -826,11 +885,36 @@ function updateAuthUI(user){
 }
 
 function handleGoogleLogin(){
-  var origin=window.location.origin;
-  var redirectTo=(origin.indexOf('partth.com')!==-1)?'https://partth.com':origin;
-  supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo}});
+  var base=window.location.origin;
+  var redirectTo=(base.indexOf('partth.com')!==-1)?'https://partth.com':base;
+  supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo,queryParams:{access_type:'offline',prompt:'consent'}}});
 }
 
+// I18N + THEME
+var LANG={es:{'nav.entrar':'Entrar','nav.quienes':'Quiénes somos','nav.cta':'Pedir Cotización →','nav.how':'Cómo Funciona','nav.services':'Servicios','nav.plans':'Contratistas'},en:{'nav.entrar':'Sign in','nav.quienes':'About us','nav.cta':'Request Quote →','nav.how':'How it works','nav.services':'Services','nav.plans':'Contractors'}};
+function setLang(lang){
+  try{localStorage.setItem('partth-lang',lang);}catch(e){}
+  document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);});
+  document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.getAttribute('data-i18n');if(LANG[lang]&&LANG[lang][k])el.textContent=LANG[lang][k];});
+}
+function toggleTheme(){
+  var html=document.documentElement;
+  var next=html.classList.contains('theme-light')?'theme-dark':'theme-light';
+  html.classList.remove('theme-dark','theme-light');html.classList.add(next);
+  try{localStorage.setItem('partth-theme',next);}catch(e){}
+  var tb=document.getElementById('btn-theme');if(tb)tb.textContent=next==='theme-light'?'🌙':'☀️';
+}
+function initTheme(){
+  var stored=localStorage.getItem('partth-theme');
+  var prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var theme=stored||(prefersDark?'theme-dark':'theme-light');
+  document.documentElement.classList.remove('theme-dark','theme-light');document.documentElement.classList.add(theme);
+  var tb=document.getElementById('btn-theme');if(tb)tb.textContent=theme==='theme-light'?'🌙':'☀️';
+}
+function initLang(){
+  var lang=localStorage.getItem('partth-lang')||'es';
+  setLang(lang);
+}
 // PAGE ROUTING
 var ROUTES={landing:'/',cotizacion:'/cotizacion','quien-somos':'/quien-somos',privacy:'/privacy-policy',terms:'/terms-of-service',cookie:'/cookie-policy'};
 var PAGE_META={
@@ -903,6 +987,8 @@ function submitCta(){
 }
 
 document.addEventListener('DOMContentLoaded',function(){
+  initTheme();
+  initLang();
   initRoute();
   window.addEventListener('popstate',function(){initRoute();});
 });
