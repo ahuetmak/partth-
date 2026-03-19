@@ -74,6 +74,17 @@ body{background:var(--bg);color:var(--text,inherit);font-family:"Outfit",sans-se
 .theme-light .lang-btn,.theme-light .theme-btn{background:rgba(0,0,0,.05);border:1px solid var(--border);color:var(--muted)}
 .theme-light .lang-btn:hover,.theme-light .theme-btn:hover{background:rgba(0,0,0,.08);color:#1a1a24}
 .theme-light .lang-btn.active,.theme-light .theme-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+/* Crawler: página visible según URL sin JS */
+html[data-initial-route="privacy"] .page{display:none!important}
+html[data-initial-route="privacy"] #page-privacy{display:block!important}
+html[data-initial-route="terms"] .page{display:none!important}
+html[data-initial-route="terms"] #page-terms{display:block!important}
+html[data-initial-route="cookie"] .page{display:none!important}
+html[data-initial-route="cookie"] #page-cookie{display:block!important}
+html[data-initial-route="quien-somos"] .page{display:none!important}
+html[data-initial-route="quien-somos"] #page-quien-somos{display:block!important}
+html[data-initial-route="cotizacion"] .page{display:none!important}
+html[data-initial-route="cotizacion"] #page-cotizacion{display:block!important}
 body::before{content:"";position:fixed;top:-40%;left:-20%;width:70%;height:70%;background:radial-gradient(ellipse,rgba(245,166,35,.06),transparent 70%);pointer-events:none;z-index:0}
 body::after{content:"";position:fixed;bottom:-30%;right:-20%;width:60%;height:60%;background:radial-gradient(ellipse,rgba(0,212,170,.05),transparent 70%);pointer-events:none;z-index:0}
 
@@ -326,6 +337,9 @@ footer a:hover{color:#fff}
   .section{padding:60px 16px}
 }
 </style>
+<script>
+(function(){var p=(location.pathname||'/').replace(/\/$/,'')||'/';var r='';if(p==='/privacy-policy')r='privacy';else if(p==='/terms-of-service')r='terms';else if(p==='/cookie-policy')r='cookie';else if(p==='/quien-somos')r='quien-somos';else if(p==='/cotizacion')r='cotizacion';if(r)document.documentElement.setAttribute('data-initial-route',r);})();
+</script>
 </head>
 <body>
 <script>
