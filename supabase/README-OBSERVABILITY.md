@@ -12,6 +12,6 @@ Si tu plan incluye configuración avanzada, aplica los valores manualmente.
 
 ## Valores actuales
 
-- **Observability**: habilitada
+- **Observability**: deshabilitada (top-level)
 - **Logs**: habilitados, persistencia activa, invocation_logs activo
 - **Traces**: habilitados, persistencia activa
