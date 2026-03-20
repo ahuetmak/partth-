@@ -15,6 +15,7 @@ function buildSitemap() {
   const today = new Date().toISOString().split('T')[0];
   const urls = [
     ['/', '1.0', 'daily'],
+    ['/cotizacion', '0.95', 'daily'],
     ['/houston', '0.9', 'daily'],
     ['/dallas', '0.9', 'daily'],
     ['/austin', '0.9', 'daily'],
