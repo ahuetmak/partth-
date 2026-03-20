@@ -12,14 +12,18 @@
 
 ---
 
-## 1. PayPal Webhook (verificar)
+## 1. PayPal Webhook (partth.com)
 
-**URL que debe estar en PayPal Developer:**
+**URL en PayPal Developer:**
 ```
-https://ptfsjqsckjqamaiagidj.supabase.co/functions/v1/paypal-webhook
+https://partth.com/api/paypal/webhook
 ```
+
+**Webhook ID:** `56S73267TA733483A` (usar en PayPal al registrar)
 
 **Evento:** `PAYMENT.CAPTURE.COMPLETED`
+
+**Flujo:** Cloudflare Pages Function (`/api/paypal/webhook`) → proxy → Supabase Edge Function
 
 **Dónde:** [developer.paypal.com](https://developer.paypal.com) → Tu app → Webhooks → Add Webhook
 
