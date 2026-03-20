@@ -559,7 +559,7 @@ footer a:hover{color:#fff}
       <!-- UN SOLO BOTÓN PAYPAL PARA PLANES -->
       <div id="pp-unified-plans" class="pp-unified-wrap" style="display:none">
         <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:12px;text-align:center;letter-spacing:.08em">PAGA CON PAYPAL</div>
-        <div id="pp-btn-plans" style="min-height:50px;display:flex;align-items:center;justify-content:center;max-width:320px;margin:0 auto"></div>
+        <div id="pp-btn-plans" style="min-height:55px;min-width:200px;display:flex;align-items:center;justify-content:center;max-width:320px;margin:0 auto"></div>
         <p style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.18);font-family:'DM Mono',monospace">PayPal · Venmo · Pago seguro</p>
       </div>
 
@@ -690,7 +690,7 @@ footer a:hover{color:#fff}
     <!-- PayPal commitment button -->
     <div style="background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px">
       <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--muted);margin-bottom:14px;text-align:center;letter-spacing:.08em">PAGA TU CUOTA DE COMPROMISO</div>
-      <div id="pp-btn-cotizacion" style="min-height:50px;display:flex;align-items:center;justify-content:center">
+      <div id="pp-btn-cotizacion" style="min-height:55px;min-width:200px;display:flex;align-items:center;justify-content:center">
         <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">Cargando pago seguro…</span>
       </div>
       <p style="text-align:center;margin-top:10px;font-size:10px;color:rgba(255,255,255,.18);font-family:'DM Mono',monospace">SSL 256-bit · Procesado de forma segura</p>
@@ -795,28 +795,43 @@ footer a:hover{color:#fff}
   </button>
 </div>
 
-<!-- PAYPAL SDK — UN SOLO BOTÓN DINÁMICO -->
+<!-- PAYPAL SDK — CARGA INMEDIATA + RENDER ROBUSTO -->
 <script>
 window.PAYMENT_CTX={item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};
+window.PAYPAL_PENDING=[];
 function getPaymentCtx(){return window.PAYMENT_CTX;}
+function paypalFallback(id){
+  var el=document.getElementById(id);
+  if(el)el.innerHTML='<a href="mailto:support@partth.com?subject=Pago%20PARTTH" style="display:block;background:linear-gradient(135deg,#f5a623,#c87d0a);color:#000;text-align:center;padding:14px 24px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px">Pagar ahora (support@partth.com) →</a>';
+}
 function selectPlan(plan,amount){
   document.querySelectorAll('.plan-selectable').forEach(function(p){p.classList.remove('selected');});
   var el=document.querySelector('.plan-selectable[data-plan="'+plan+'"]');
   if(el){el.classList.add('selected');}
   window.PAYMENT_CTX={item:plan,amount:amount,desc:(el&&el.getAttribute('data-desc'))||'Plan PARTTH'};
-  document.getElementById('pp-unified-plans').style.display='block';
-  if(window.paypal&&window.paypalUnifiedInstance){renderPayPalUnified('pp-btn-plans');}
+  var wrap=document.getElementById('pp-unified-plans');
+  if(wrap)wrap.style.display='block';
+  setTimeout(function(){schedulePayPalRender('pp-btn-plans');},100);
 }
-function renderPayPalUnified(containerId){
+function schedulePayPalRender(containerId){
+  if(window.paypal&&window.paypal.Buttons){
+    doPayPalRender(containerId);
+  }else{
+    window.PAYPAL_PENDING.push(containerId);
+  }
+}
+function doPayPalRender(containerId){
   var el=document.getElementById(containerId);
-  if(!el||!window.paypal)return;
-  el.innerHTML='';
+  if(!el)return;
   var ctx=getPaymentCtx();
-  if(!ctx||!ctx.amount)return;
+  if(!ctx||!ctx.amount){paypalFallback(containerId);return;}
+  el.innerHTML='';
+  if(!window.paypal||!window.paypal.Buttons){paypalFallback(containerId);return;}
   try{
-    paypal.Buttons({
+    var btns=paypal.Buttons({
       createOrder:function(data,actions){
         return actions.order.create({
+          intent:'CAPTURE',
           purchase_units:[{
             description:ctx.desc||'PARTTH',
             amount:{currency_code:'USD',value:String(ctx.amount)},
@@ -825,27 +840,40 @@ function renderPayPalUnified(containerId){
         });
       },
       onApprove:function(data,actions){
-        if(window.saveProjectData){window.saveProjectData();}
-        window.fbq&&fbq('track','Purchase',{value:ctx.amount,currency:'USD'});
+        if(typeof window.saveProjectData==='function')window.saveProjectData();
+        if(typeof window.fbq==='function')fbq('track','Purchase',{value:ctx.amount,currency:'USD'});
         return actions.order.capture().then(function(details){alert('Pago completado. Te contactaremos pronto.');});
       },
+      onError:function(err){console.error('PayPal error:',err);paypalFallback(containerId);},
       style:{color:'gold',shape:'rect',label:'paypal'}
-    }).render('#'+containerId);
-  }catch(e){console.warn('PayPal render:',e);el.innerHTML='<a href="mailto:support@partth.com" style="display:block;background:var(--amber);color:#000;text-align:center;padding:13px;border-radius:10px;font-weight:700;text-decoration:none">Pagar vía email →</a>';}
+    });
+    var rendered=btns.render('#'+containerId);
+    if(rendered&&typeof rendered.then==='function'){
+      rendered.catch(function(e){console.warn('PayPal render err:',e);paypalFallback(containerId);});
+    }
+  }catch(e){console.warn('PayPal render:',e);paypalFallback(containerId);}
 }
-window.addEventListener('load',function(){
+function renderPayPalUnified(containerId){
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){doPayPalRender(containerId);});
+  });
+}
+(function(){
   var s=document.createElement('script');
-  s.src='https://www.paypal.com/sdk/js?client-id=BAAJO9XNj_hl0OTC0BszJykUP5KULeKU9BthFpOmtF03fkjBWm9YKqWurOuu_9FfhpinYyCodtNPsOq7Vk&components=buttons&enable-funding=venmo&currency=USD';
+  s.src='https://www.paypal.com/sdk/js?client-id=BAAJO9XNj_hl0OTC0BszJykUP5KULeKU9BthFpOmtF03fkjBWm9YKqWurOuu_9FfhpinYyCodtNPsOq7Vk&components=buttons&intent=capture&currency=USD&enable-funding=venmo';
+  s.async=true;
   s.onload=function(){
     window.paypalUnifiedInstance=true;
+    window.PAYPAL_PENDING.forEach(function(id){doPayPalRender(id);});
+    window.PAYPAL_PENDING=[];
     var cotizacionActive=document.getElementById('page-cotizacion')&&document.getElementById('page-cotizacion').classList.contains('active');
-    if(cotizacionActive){window.PAYMENT_CTX=window.PAYMENT_CTX||{item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};renderPayPalUnified('pp-btn-cotizacion');}
+    if(cotizacionActive){window.PAYMENT_CTX=window.PAYMENT_CTX||{item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};doPayPalRender('pp-btn-cotizacion');}
   };
   s.onerror=function(){
-    ['pp-btn-cotizacion','pp-btn-plans'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML='<a href="mailto:support@partth.com" style="display:block;background:var(--amber);color:#000;text-align:center;padding:13px;border-radius:10px;font-weight:700;text-decoration:none">Pagar vía email →</a>';});
+    ['pp-btn-cotizacion','pp-btn-plans'].forEach(paypalFallback);
   };
-  document.body.appendChild(s);
-});
+  (document.head||document.documentElement).appendChild(s);
+})();
 </script>
 
 <!-- SUPABASE AUTH + APP -->
@@ -962,7 +990,7 @@ function goPage(name){
       if(window.history&&window.history.pushState){window.history.pushState({},'',path);}
       if(name==='cotizacion'){
         window.PAYMENT_CTX={item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};
-        if(window.paypal&&typeof renderPayPalUnified==='function'){setTimeout(function(){renderPayPalUnified('pp-btn-cotizacion');},300);}
+        setTimeout(function(){schedulePayPalRender('pp-btn-cotizacion');},350);
       }
     }
   }catch(e){console.warn('goPage:',e);}
