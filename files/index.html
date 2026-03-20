@@ -811,8 +811,9 @@ function selectPlan(plan,amount){
   window.PAYMENT_CTX={item:plan,amount:amount,desc:(el&&el.getAttribute('data-desc'))||'Plan PARTTH'};
   var wrap=document.getElementById('pp-unified-plans');
   if(wrap)wrap.style.display='block';
-  setTimeout(function(){schedulePayPalRender('pp-btn-plans');},100);
+  setTimeout(function(){if(typeof schedulePayPalRender==='function')schedulePayPalRender('pp-btn-plans');},100);
 }
+window.selectPlan=selectPlan;
 function schedulePayPalRender(containerId){
   if(window.paypal&&window.paypal.Buttons){
     doPayPalRender(containerId);
@@ -876,13 +877,15 @@ function renderPayPalUnified(containerId){
 })();
 </script>
 
-<!-- SUPABASE AUTH + APP -->
+<!-- SUPABASE AUTH + APP — Funciones globales primero para que botones siempre funcionen -->
 <script>
 var SUPA_URL='https://ptfsjqsckjqamaiagidj.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0ZnNqcXNja2pxYW1haWFnaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNzQ1NjMsImV4cCI6MjA4ODg1MDU2M30.vXkOBBbZgKO_fOQ3ViI6_4f8mT5gKbFiTwnDMxIYqlA';
-var supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{flowType:'pkce',detectSessionInUrl:true}});
+var supa=null;
+try{if(window.supabase)supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{flowType:'pkce',detectSessionInUrl:true}});}catch(e){console.warn('Supabase init:',e);}
 
-// Auth state + OAuth callback (intercambio de código al volver de Google)
+// Auth state + OAuth callback (solo si Supabase cargó)
+if(supa){
 (function(){
   var params=new URLSearchParams(window.location.search);
   var code=params.get('code');
@@ -895,17 +898,18 @@ var supa=window.supabase.createClient(SUPA_URL,SUPA_KEY,{auth:{flowType:'pkce',d
     supa.auth.exchangeCodeForSession(code).then(function(r){
       if(r.error)console.warn('Auth exchange error:',r.error);
       window.history.replaceState({},'',window.location.pathname||'/');
-      updateAuthUI(r.data.session?r.data.session.user:null);
+      if(typeof updateAuthUI==='function')updateAuthUI(r.data.session?r.data.session.user:null);
     });
     return;
   }
   supa.auth.onAuthStateChange(function(event,session){
-    updateAuthUI(session?session.user:null);
+    if(typeof updateAuthUI==='function')updateAuthUI(session?session.user:null);
   });
   supa.auth.getSession().then(function(r){
-    updateAuthUI(r.data.session?r.data.session.user:null);
+    if(typeof updateAuthUI==='function')updateAuthUI(r.data.session?r.data.session.user:null);
   });
 })();
+}
 
 function updateAuthUI(user){
   var btn=document.getElementById('btn-google-login');
@@ -927,10 +931,12 @@ function updateAuthUI(user){
 }
 
 function handleGoogleLogin(){
+  if(!supa)return;
   var base=window.location.origin;
   var redirectTo=(base.indexOf('partth.com')!==-1)?'https://partth.com':base;
   supa.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirectTo,queryParams:{access_type:'offline',prompt:'consent'}}});
 }
+window.handleGoogleLogin=handleGoogleLogin;
 
 // I18N + THEME
 var LANG={es:{'nav.entrar':'Entrar','nav.quienes':'Quiénes somos','nav.cta':'Pedir Cotización →','nav.how':'Cómo Funciona','nav.services':'Servicios','nav.plans':'Contratistas'},en:{'nav.entrar':'Sign in','nav.quienes':'About us','nav.cta':'Request Quote →','nav.how':'How it works','nav.services':'Services','nav.plans':'Contractors'}};
@@ -939,6 +945,7 @@ function setLang(lang){
   document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('data-lang')===lang);});
   document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.getAttribute('data-i18n');if(LANG[lang]&&LANG[lang][k])el.textContent=LANG[lang][k];});
 }
+window.setLang=setLang;
 function toggleTheme(){
   var html=document.documentElement;
   var next=html.classList.contains('theme-light')?'theme-dark':'theme-light';
@@ -946,6 +953,7 @@ function toggleTheme(){
   try{localStorage.setItem('partth-theme',next);}catch(e){}
   var tb=document.getElementById('btn-theme');if(tb)tb.textContent=next==='theme-light'?'🌙':'☀️';
 }
+window.toggleTheme=toggleTheme;
 function initTheme(){
   var stored=localStorage.getItem('partth-theme');
   var prefersDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -990,11 +998,12 @@ function goPage(name){
       if(window.history&&window.history.pushState){window.history.pushState({},'',path);}
       if(name==='cotizacion'){
         window.PAYMENT_CTX={item:'commitment',amount:50,desc:'Cuota de compromiso PARTTH'};
-        setTimeout(function(){schedulePayPalRender('pp-btn-cotizacion');},350);
+        setTimeout(function(){if(typeof schedulePayPalRender==='function')schedulePayPalRender('pp-btn-cotizacion');},350);
       }
     }
   }catch(e){console.warn('goPage:',e);}
 }
+window.goPage=goPage;
 function initRoute(){
   var path=window.location.pathname.replace(/\/$/,'')||'/';
   var name='landing';
@@ -1015,6 +1024,7 @@ function setAudience(type){
   if(ac)ac.className='aud-btn'+(type==='client'?' active':'');
   if(act)act.className='aud-btn'+(type==='contractor'?' active':'');
 }
+window.setAudience=setAudience;
 
 // CTA FORM
 function submitCta(){
@@ -1026,13 +1036,14 @@ function submitCta(){
   if(formEl)formEl.style.display='none';
   if(successEl)successEl.style.display='';
   if(typeof window.fbq==='function')fbq('track','Lead',{content_name:'Email Capture'});
-  if(typeof supa!=='undefined')supa.from('intent_conversations').insert({
+  if(supa)supa.from('intent_conversations').insert({
     session_id:'cta-'+Date.now(),
     contact:email,
     contact_type:'email',
     stage:'capture'
   }).then(function(){}).catch(function(){});
 }
+window.submitCta=submitCta;
 
 document.addEventListener('DOMContentLoaded',function(){
   initTheme();
@@ -1044,14 +1055,14 @@ document.addEventListener('DOMContentLoaded',function(){
 document.addEventListener('DOMContentLoaded',function(){
   // When user fills the form and clicks PayPal, save data
   window.saveProjectData=function(){
-    var type=document.getElementById('f-type').value;
-    var name=document.getElementById('f-name').value;
-    var city=document.getElementById('f-city').value;
-    var email=document.getElementById('f-email').value;
-    var notes=document.getElementById('f-notes').value;
-    if(!email||!type){return false;}
-    supa.from('clients').upsert({name:name,email:email,city:city,project_type:type,notes:notes},{onConflict:'email'}).then(function(){});
-    window.fbq&&fbq('track','AddPaymentInfo',{content_name:type,value:50,currency:'USD'});
+    var type=document.getElementById('f-type')&&document.getElementById('f-type').value;
+    var name=document.getElementById('f-name')&&document.getElementById('f-name').value;
+    var city=document.getElementById('f-city')&&document.getElementById('f-city').value;
+    var email=document.getElementById('f-email')&&document.getElementById('f-email').value;
+    var notes=document.getElementById('f-notes')&&document.getElementById('f-notes').value;
+    if(!email||!type)return false;
+    if(supa)supa.from('clients').upsert({name:name,email:email,city:city,project_type:type,notes:notes},{onConflict:'email'}).then(function(){}).catch(function(){});
+    if(typeof window.fbq==='function')fbq('track','AddPaymentInfo',{content_name:type,value:50,currency:'USD'});
     return true;
   };
 });
@@ -1066,13 +1077,14 @@ document.querySelectorAll('.fade').forEach(function(el){io.observe(el);});
 var chatHistory=[];
 var chatOpen=false;
 
-function toggleChat(){try{chatOpen?closeChat():openChat();}catch(e){openChat();}}
+function toggleChat(){try{chatOpen?closeChat():openChat();}catch(e){try{openChat();}catch(e2){}}}
 function closeChat(){var b=document.getElementById('chat-box');if(b)b.classList.remove('open');chatOpen=false;}
 function openChat(){
   var b=document.getElementById('chat-box');
   if(b){b.classList.add('open');chatOpen=true;}
   if(typeof window.fbq==='function')fbq('track','Lead',{content_name:'Chat Open'});
 }
+window.toggleChat=toggleChat;window.closeChat=closeChat;window.openChat=openChat;
 
 function addMsg(text,cls){
   var msgs=document.getElementById('ch-msgs');
@@ -1125,7 +1137,8 @@ async function sendChat(){
   send.disabled=false;
   if(inp)inp.focus();
 }
-(function(){var el=document.getElementById('ch-inp');if(el)el.addEventListener('keypress',function(e){if(e.key==='Enter')sendChat();});})();
+window.sendChat=sendChat;
+(function(){var el=document.getElementById('ch-inp');if(el)el.addEventListener('keypress',function(e){if(e.key==='Enter'&&typeof sendChat==='function')sendChat();});})();
 </script>
 
 </body>
