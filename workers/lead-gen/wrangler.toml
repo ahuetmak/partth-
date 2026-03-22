@@ -8,6 +8,6 @@ compatibility_date = "2024-01-01"
 # APIFY_WEBHOOK_SECRET, SERPAPI_KEY, MILLION_VERIFIER_KEY, RESEND_API_KEY,
 # PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
-# Cron opcional (descomentar para procesar cola cada hora):
-# [triggers]
-# crons = ["0 * * * *"]
+# Cron para procesar cola de leads (USE_QUEUE=true)
+[triggers]
+crons = ["*/5 * * * *"]
