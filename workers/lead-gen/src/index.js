@@ -1,8 +1,10 @@
 /**
  * B2B Lead Gen Worker — Apify → SerpApi → MillionVerifier → Match → Resend → PayPal
+ * Operación estatal de alto volumen: cola, índices, control de concurrencia.
  * Todas las credenciales desde env (wrangler secret put)
  */
 
+// Matriz exhaustiva de precios por sub-servicio (spec completa)
 const PRICING_MATRIX = {
   residential: {
     default: 35.00,
@@ -57,6 +59,18 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization'
 };
 
+const DEFAULT_BATCH_SIZE = 5;
+const DEFAULT_DELAY_MS = 500;
+
+function isValidEmail(str) {
+  if (!str || typeof str !== 'string') return false;
+  const s = str.trim();
+  if (s.length < 5 || !s.includes('@') || s.includes('//') || s.includes(' ')) return false;
+  const atIdx = s.indexOf('@');
+  const domain = s.slice(atIdx + 1);
+  return domain.includes('.') && !/^[\d\s\/\@\+\.\-]+$/.test(s);
+}
+
 function jsonResp(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -81,6 +95,9 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/apify-webhook' && request.method === 'POST') {
       return handleApifyWebhook(request, env);
+    }
+    if (url.pathname === '/api/apify-contractors' && request.method === 'POST') {
+      return handleApifyContractors(request, env);
     }
     if (url.pathname === '/api/paypal-webhook' && request.method === 'POST') {
       return handlePayPalWebhook(request, env);
@@ -123,30 +140,107 @@ async function handleApifyWebhook(request, env) {
       zip_code: zip,
       city,
       lead_price: price,
-      status: 'new',
+      status: env.USE_QUEUE === 'true' ? 'queued' : 'new',
       raw_payload: body
     });
 
-    const contractors = await getContractorsByZipCategory(env, zip, main_category);
-    let toEmail = contractors;
-
-    if (contractors.length === 0) {
-      const found = await fetchContractorsFromSerpApi(env, zip, main_category);
-      toEmail = found;
+    if (env.USE_QUEUE === 'true') {
+      return jsonResp({ ok: true, queued: true, lead_id: lead.id }, 202);
     }
 
-    if (toEmail.length > 0) {
-      for (const c of toEmail) {
-        const paypalUrl = await createPayPalOrder(env, lead.id, c.id, price, main_category, sub_service);
-        if (paypalUrl) await sendOfferEmail(env, c, lead, price, paypalUrl);
-        await sleep(500);
-      }
-      await supabaseUpdate(env, 'b2b_leads', lead.id, { status: 'emails_sent' });
-    }
-
-    return jsonResp({ ok: true, lead_id: lead.id, contractors_notified: toEmail.length });
+    return processLeadToContractors(env, lead, price, main_category, sub_service);
   } catch (e) {
     console.error('[apify]', e);
+    return jsonResp({ error: String(e.message) }, 500);
+  }
+}
+
+async function processLeadToContractors(env, lead, price, main_category, sub_service) {
+  const delayMs = Number(env.DELAY_BETWEEN_CONTRACTORS) || DEFAULT_DELAY_MS;
+
+  let contractors = await getContractorsByZipCategory(env, lead.zip_code, main_category);
+
+  if (contractors.length === 0) {
+    contractors = await fetchContractorsFromSerpApi(env, lead.zip_code, main_category);
+  }
+
+  let notified = 0;
+  if (contractors.length > 0) {
+    for (const c of contractors) {
+      const paypalUrl = await createPayPalOrder(env, lead.id, c.id, price, main_category, sub_service);
+      if (paypalUrl) {
+        await sendOfferEmail(env, c, lead, price, paypalUrl);
+        notified++;
+      }
+      await sleep(delayMs);
+    }
+  }
+  await supabaseUpdate(env, 'b2b_leads', lead.id, { status: 'emails_sent' });
+
+  return jsonResp({ ok: true, lead_id: lead.id, contractors_notified: notified });
+}
+
+function extractZipFromLocation(loc) {
+  if (!loc || typeof loc !== 'string') return null;
+  const m = loc.match(/\b(\d{5})(?:-\d{4})?\b/);
+  return m ? m[1] : null;
+}
+
+async function handleApifyContractors(request, env) {
+  try {
+    const url = new URL(request.url);
+    const body = await request.json();
+    const raw = Array.isArray(body) ? body : (body.items || [body]);
+    const defaultZip = body.default_zip || body.defaultZip || body.zip_code || url.searchParams.get('default_zip') || url.searchParams.get('zip_code') || '';
+    const defaultCategory = (body.default_category || body.defaultCategory || url.searchParams.get('default_category') || 'residential').toLowerCase();
+
+    if (!['residential', 'commercial', 'permits'].includes(defaultCategory)) {
+      return jsonResp({ error: 'default_category must be residential, commercial, or permits' }, 400);
+    }
+
+    const delayMs = Number(env.DELAY_BETWEEN_CONTRACTORS) || DEFAULT_DELAY_MS;
+    let inserted = 0;
+
+    for (const item of raw) {
+      const emails = item.emails || [];
+      const profiles = item.facebookProfiles || [];
+      const firstProfile = profiles[0];
+      let zip = defaultZip ? String(defaultZip).replace(/\D/g, '').slice(0, 5) : null;
+      let companyName = '';
+      if (firstProfile) {
+        zip = zip || extractZipFromLocation(firstProfile.location);
+        companyName = firstProfile.profileName || firstProfile.profile_name || companyName;
+      }
+
+      const safeZip = (zip && /^\d{5}$/.test(String(zip))) ? zip : (defaultZip && /^\d{5}$/.test(String(defaultZip).replace(/\D/g, '').slice(0, 5)) ? String(defaultZip).replace(/\D/g, '').slice(0, 5) : null;
+      if (!safeZip) continue;
+
+      for (const e of emails) {
+        const email = String(e).trim();
+        if (!isValidEmail(email)) continue;
+        const mv = await millionVerify(env, email);
+        if (mv !== 'Valid') continue;
+        const row = {
+          company_name: companyName || email.split('@')[0],
+          email,
+          phone: firstProfile?.contact || null,
+          zip_code: safeZip,
+          city: firstProfile?.location?.split(',')[0]?.trim() || null,
+          main_category: defaultCategory,
+          million_verifier_status: 'Valid',
+          source: 'apify'
+        };
+        try {
+          await supabaseUpsert(env, 'b2b_contractors', row, 'email');
+          inserted++;
+        } catch (_) {}
+        await sleep(delayMs);
+      }
+    }
+
+    return jsonResp({ ok: true, contractors_inserted: inserted });
+  } catch (e) {
+    console.error('[apify-contractors]', e);
     return jsonResp({ error: String(e.message) }, 500);
   }
 }
@@ -201,7 +295,7 @@ async function verifyApifySignature(payload, signature, secret) {
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
   const expected = btoa(String.fromCharCode(...new Uint8Array(sig)));
-  return signature === expected || crypto.timingSafeEqual(enc.encode(signature), enc.encode(expected));
+  return signature === expected;
 }
 
 async function verifyPayPalWebhook(env, request, body) {
@@ -247,7 +341,7 @@ async function fetchContractorsFromSerpApi(env, zip, category) {
   const places = data.local_results || [];
   for (const p of places.slice(0, 20)) {
     const email = (p.email || p.booking?.email || '').trim();
-    if (!email || !email.includes('@')) continue;
+    if (!isValidEmail(email)) continue;
     const mv = await millionVerify(env, email);
     if (mv === 'Valid') {
       const row = {
@@ -270,11 +364,19 @@ async function fetchContractorsFromSerpApi(env, zip, category) {
 async function millionVerify(env, email) {
   const key = env.MILLION_VERIFIER_KEY || env.MILLIONVERIFY_API_KEY;
   if (!key) return 'Invalid';
-  const r = await retryWithBackoff(() => fetch(
-    `https://api.millionverifier.com/api/v3/?api=${key}&email=${encodeURIComponent(email)}&cached=1`
-  ));
-  const d = await r.json();
-  return d.resultcode === 1 ? 'Valid' : 'Invalid';
+  if (!isValidEmail(email)) return 'Invalid';
+  try {
+    const r = await retryWithBackoff(() => fetch(
+      `https://api.millionverifier.com/api/v3/?api=${key}&email=${encodeURIComponent(email)}&cached=1`
+    ));
+    const d = await r.json();
+    if (d.resultcode === 1) return 'Valid';
+    if ([2, 3, 4, 5].includes(d.resultcode)) return 'Invalid';
+    return d.result || 'Invalid';
+  } catch (e) {
+    console.error('[millionverifier]', email, e);
+    return 'Invalid';
+  }
 }
 
 async function createPayPalOrder(env, leadId, contractorId, amount, mainCategory, subService) {
@@ -413,5 +515,23 @@ async function supabaseGet(env, table, id) {
 }
 
 async function processQueue(env) {
-  // Procesar leads pendientes de cola (implementación futura)
+  const batchSize = Number(env.QUEUE_BATCH_SIZE) || DEFAULT_BATCH_SIZE;
+  const url = `${env.SUPABASE_URL}/rest/v1/b2b_leads?status=eq.queued&order=created_at.asc&limit=${batchSize}&select=*`;
+  const r = await fetch(url, {
+    headers: {
+      'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY
+    }
+  });
+  const queued = await r.json();
+  if (!Array.isArray(queued) || queued.length === 0) return;
+
+  for (const lead of queued) {
+    try {
+      await supabaseUpdate(env, 'b2b_leads', lead.id, { status: 'new' });
+      await processLeadToContractors(env, lead, lead.lead_price, lead.main_category, lead.sub_service || '');
+    } catch (e) {
+      console.error('[queue] lead', lead.id, e);
+    }
+  }
 }
