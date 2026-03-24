@@ -16,10 +16,24 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Check required secrets
+        id: secrets
+        env:
+          SB_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SB_KEY" ]; then
+            echo "::warning::SUPABASE_SERVICE_ROLE_KEY not set -- skipping ingest"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install
+        if: steps.secrets.outputs.skip != 'true'
         run: cd scripts/ingest-permits && npm install
 
       - name: Ingest
+        if: steps.secrets.outputs.skip != 'true'
         env:
           SUPABASE_URL: https://ptfsjqsckjqamaiagidj.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
