@@ -16,8 +16,8 @@ jobs:
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.API_CLOUDFLARE }}
+          accountId: ${{ secrets.ID_CUENTA_CLOUDFLARE }}
           projectName: partth
           directory: files
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
@@ -27,7 +27,7 @@ jobs:
         run: |
           if [ -n "${{ secrets.CLOUDFLARE_ZONE_ID }}" ]; then
             curl -s -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/purge_cache" \
-              -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              -H "Authorization: Bearer ${{ secrets.API_CLOUDFLARE }}" \
               -H "Content-Type: application/json" \
               --data '{"hosts":["partth.com"]}'
           fi
