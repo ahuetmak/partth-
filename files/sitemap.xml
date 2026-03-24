@@ -1,18 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://partth.com/</loc><lastmod>2026-03-16</lastmod><priority>1.0</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://partth.com/cotizacion</loc><lastmod>2026-03-24</lastmod><priority>0.95</priority><changefreq>daily</changefreq></url>
   <url><loc>https://partth.com/houston</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>daily</changefreq></url>
   <url><loc>https://partth.com/dallas</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>daily</changefreq></url>
   <url><loc>https://partth.com/austin</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>daily</changefreq></url>
   <url><loc>https://partth.com/san-antonio</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>daily</changefreq></url>
   <url><loc>https://partth.com/fort-worth</loc><lastmod>2026-03-16</lastmod><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/corpus-christi</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/laredo</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/lubbock</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/arlington</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/garland</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/frisco</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/mckinney</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/amarillo</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/grand-prairie</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/brownsville</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/pasadena</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/mesquite</loc><lastmod>2026-03-24</lastmod><priority>0.78</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://partth.com/plano</loc><lastmod>2026-03-16</lastmod><priority>0.7</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://partth.com/el-paso</loc><lastmod>2026-03-16</lastmod><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://partth.com/irving</loc><lastmod>2026-03-24</lastmod><priority>0.7</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://partth.com/pintura-residencial</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://partth.com/pintura-comercial</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://partth.com/demolicion-residencial</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
   <url><loc>https://partth.com/demolicion-comercial</loc><lastmod>2026-03-16</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://partth.com/cotizacion</loc><lastmod>2026-03-17</lastmod><priority>0.95</priority><changefreq>daily</changefreq></url>
   <url><loc>https://partth.com/quien-somos</loc><lastmod>2026-03-17</lastmod><priority>0.6</priority><changefreq>monthly</changefreq></url>
   <url><loc>https://partth.com/privacy-policy</loc><lastmod>2026-03-17</lastmod><priority>0.3</priority><changefreq>monthly</changefreq></url>
   <url><loc>https://partth.com/terms-of-service</loc><lastmod>2026-03-17</lastmod><priority>0.3</priority><changefreq>monthly</changefreq></url>

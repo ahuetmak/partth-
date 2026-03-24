@@ -20,10 +20,25 @@ function buildSitemap() {
     ['/dallas', '0.9', 'daily'],
     ['/austin', '0.9', 'daily'],
     ['/san-antonio', '0.9', 'daily'],
-    ['/fort-worth', '0.8', 'weekly'],
-    ['/plano', '0.7', 'weekly'],
-    ['/el-paso', '0.7', 'weekly'],
-    ['/irving', '0.7', 'weekly'],
+    ['/fort-worth', '0.85', 'daily'],
+    ['/el-paso', '0.85', 'daily'],
+    ['/arlington', '0.8', 'daily'],
+    ['/corpus-christi', '0.8', 'daily'],
+    ['/plano', '0.8', 'daily'],
+    ['/laredo', '0.8', 'daily'],
+    ['/lubbock', '0.8', 'daily'],
+    ['/irving', '0.8', 'daily'],
+    ['/garland', '0.8', 'daily'],
+    ['/frisco', '0.8', 'daily'],
+    ['/mckinney', '0.8', 'daily'],
+    ['/amarillo', '0.75', 'weekly'],
+    ['/grand-prairie', '0.75', 'weekly'],
+    ['/brownsville', '0.75', 'weekly'],
+    ['/pasadena', '0.75', 'weekly'],
+    ['/mesquite', '0.75', 'weekly'],
+    ['/residencial', '0.9', 'weekly'],
+    ['/comercial', '0.9', 'weekly'],
+    ['/permisos', '0.9', 'weekly'],
     ['/pintura-residencial', '0.9', 'weekly'],
     ['/pintura-comercial', '0.9', 'weekly'],
     ['/demolicion-residencial', '0.9', 'weekly'],
@@ -49,12 +64,27 @@ const CITY_DATA = {
   austin:        { name: 'Austin',        pop: '978K', zip: '78701' },
   'san-antonio': { name: 'San Antonio',   pop: '1.5M', zip: '78201' },
   'fort-worth':  { name: 'Fort Worth',    pop: '935K', zip: '76101' },
-  plano:         { name: 'Plano',         pop: '285K', zip: '75075' },
   'el-paso':     { name: 'El Paso',       pop: '678K', zip: '79901' },
+  arlington:     { name: 'Arlington',     pop: '397K', zip: '76001' },
+  'corpus-christi': { name: 'Corpus Christi', pop: '317K', zip: '78401' },
+  plano:         { name: 'Plano',         pop: '285K', zip: '75075' },
   irving:        { name: 'Irving',        pop: '256K', zip: '75062' },
+  laredo:        { name: 'Laredo',        pop: '260K', zip: '78040' },
+  lubbock:       { name: 'Lubbock',       pop: '266K', zip: '79401' },
+  garland:       { name: 'Garland',       pop: '246K', zip: '75040' },
+  frisco:        { name: 'Frisco',        pop: '225K', zip: '75034' },
+  mckinney:      { name: 'McKinney',      pop: '214K', zip: '75069' },
+  amarillo:      { name: 'Amarillo',      pop: '201K', zip: '79101' },
+  'grand-prairie': { name: 'Grand Prairie', pop: '196K', zip: '75050' },
+  brownsville:   { name: 'Brownsville',   pop: '186K', zip: '78520' },
+  pasadena:      { name: 'Pasadena',      pop: '151K', zip: '77501' },
+  mesquite:      { name: 'Mesquite',      pop: '149K', zip: '75149' },
 };
 
 const SERVICE_DATA = {
+  residencial: { name: 'Leads Residenciales', desc: 'remodelación, pintura, techos y mejoras para vivienda' },
+  comercial: { name: 'Leads Comerciales', desc: 'obras, tenant buildout, HVAC y servicios para negocio' },
+  permisos: { name: 'Leads de Permisos', desc: 'permisos de construcción, zoning e inspecciones' },
   'pintura-residencial':  { name: 'Pintura Residencial', desc: 'interior y exterior de casas y residencias' },
   'pintura-comercial':    { name: 'Pintura Comercial',   desc: 'oficinas, locales, bodegas y espacios comerciales' },
   'demolicion-residencial': { name: 'Demolición Residencial', desc: 'casas, garajes y estructuras residenciales' },
@@ -110,7 +140,7 @@ footer{border-top:1px solid rgba(255,255,255,.06);padding:24px 40px;text-align:c
   ${body.content}
   <br/><a href="/" class="back">← Volver a PARTTH</a>
 </div>
-<footer>© 2026 PARTTH · support@partth.com · Pintura y Demolición · Texas</footer>
+<footer>© 2026 PARTTH · support@partth.com · Leads Residencial, Comercial y Permisos · Texas</footer>
 </body>
 </html>`;
 }
@@ -140,19 +170,19 @@ export default {
     if (CITY_DATA[citySlug]) {
       const city = CITY_DATA[citySlug];
       return new Response(seoPage(
-        `Contratistas de Pintura y Demolición en ${city.name}, TX | PARTTH`,
-        `Los mejores contratistas de pintura y demolición en ${city.name}, Texas. Cotizaciones verificadas con garantía. Solicita hoy con solo $50 de compromiso.`,
-        `Pintura y Demolición en ${city.name}, Texas`,
+        `Leads de Construcción en ${city.name}, TX | Residencial, Comercial y Permisos | PARTTH`,
+        `Leads verificados de construcción residencial, comercial y permisos en ${city.name}, Texas. Un lead por contratista. Activa tu zona hoy.`,
+        `Leads de Construcción en ${city.name}, Texas`,
         `¿Por qué PARTTH en ${city.name}?`,
         {
           path,
           cityName: city.name,
-          serviceType: 'Painting Contractor, Demolition Contractor',
+          serviceType: 'Residential Leads, Commercial Leads, Permit Leads',
           content: `
-<p>PARTTH conecta propietarios y empresas en <strong>${city.name}</strong> con los mejores contratistas verificados de pintura y demolición en Texas.</p>
-<p>Con más de <strong>${city.pop} habitantes</strong>, ${city.name} es uno de los mercados de construcción más activos de Texas. PARTTH garantiza que cada cotización que recibes viene de un profesional con experiencia comprobada.</p>
-<p><strong>¿Cómo funciona?</strong> Pagas $50 de cuota de compromiso, y un contratista verificado en ${city.name} te contacta en 24-48 horas. Si lo contratas, los $50 se descuentan de la factura final.</p>
-<p>Servicios en ${city.name}: pintura interior, pintura exterior, demolición residencial, demolición comercial, y más.</p>
+<p>PARTTH orquesta leads verificados en <strong>${city.name}</strong> para contratistas de alto desempeño en Texas.</p>
+<p>Con más de <strong>${city.pop} habitantes</strong>, ${city.name} concentra demanda activa en remodelación residencial, construcción comercial y gestión de permisos.</p>
+<p><strong>Cómo operamos:</strong> capturamos señales, validamos intención y entregamos oportunidades exclusivas por zona para proteger tu margen.</p>
+<p>Categorías activas en ${city.name}: residencial, comercial y permisos de construcción.</p>
 `
         }
       ), {
