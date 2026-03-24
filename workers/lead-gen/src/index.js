@@ -1,55 +1,57 @@
+import { GoogleGenAI } from '@google/genai';
+
 /**
  * PARTTH Intelligence v4.0 — Motor Propietario
- * Protocolo de Detección Temprana de Licencias Estatales (Exclusivo Partth)
+ * Orquestador soberano: captura → venta → entrega.
  * Operación estatal: 20 ciudades Texas. Credenciales desde env.
  */
 
-// Matriz exhaustiva de precios por sub-servicio (spec completa)
+// Matriz oficial de precios (flujo de dinero intocable)
 const PRICING_MATRIX = {
   residential: {
-    default: 35.00,
-    hvac_ac_repair: 45.00,
-    foundation_repair: 60.00,
-    roofing_techos: 55.00,
-    kitchen_remodel: 50.00,
-    bathroom_remodel: 45.00,
-    solar_panels: 65.00,
+    default: 250.00,
+    hvac_ac_repair: 70.00,
+    foundation_repair: 70.00,
+    roofing_techos: 70.00,
+    kitchen_remodel: 65.00,
+    bathroom_remodel: 65.00,
+    solar_panels: 70.00,
     pool_construction: 70.00,
-    plumbing_plomeria: 35.00,
-    electrical_electricidad: 35.00,
-    painting_pintura: 25.00,
-    flooring_pisos: 30.00,
-    fencing_cercas: 25.00,
-    landscaping_paisajismo: 20.00,
-    windows_doors: 30.00
+    plumbing_plomeria: 60.00,
+    electrical_electricidad: 60.00,
+    painting_pintura: 60.00,
+    flooring_pisos: 60.00,
+    fencing_cercas: 60.00,
+    landscaping_paisajismo: 60.00,
+    windows_doors: 60.00
   },
   commercial: {
-    default: 150.00,
-    new_build_construccion: 250.00,
-    tenant_buildout_remodelacion: 180.00,
-    commercial_demolition: 200.00,
-    steel_framing_estructuras: 170.00,
-    commercial_roofing: 200.00,
-    paving_asphalt_pavimentacion: 160.00,
-    commercial_hvac: 180.00,
-    industrial_plumbing: 150.00,
-    commercial_electrical: 150.00,
-    fire_sprinkler_systems: 120.00,
-    security_access_control: 100.00,
-    facility_maintenance: 90.00
+    default: 500.00,
+    new_build_construccion: 500.00,
+    tenant_buildout_remodelacion: 500.00,
+    commercial_demolition: 500.00,
+    steel_framing_estructuras: 500.00,
+    commercial_roofing: 500.00,
+    paving_asphalt_pavimentacion: 500.00,
+    commercial_hvac: 500.00,
+    industrial_plumbing: 500.00,
+    commercial_electrical: 500.00,
+    fire_sprinkler_systems: 500.00,
+    security_access_control: 500.00,
+    facility_maintenance: 500.00
   },
   permits: {
     default: 65.00,
-    new_construction_permit: 100.00,
-    zoning_land_use: 120.00,
-    commercial_signage: 75.00,
-    remodel_addition_permit: 80.00,
-    demolition_permit: 90.00,
-    electrical_permit: 50.00,
-    plumbing_permit: 50.00,
-    hvac_mechanical_permit: 50.00,
-    environmental_water_permit: 110.00,
-    code_compliance_inspection: 85.00
+    new_construction_permit: 70.00,
+    zoning_land_use: 70.00,
+    commercial_signage: 65.00,
+    remodel_addition_permit: 70.00,
+    demolition_permit: 70.00,
+    electrical_permit: 60.00,
+    plumbing_permit: 60.00,
+    hvac_mechanical_permit: 60.00,
+    environmental_water_permit: 70.00,
+    code_compliance_inspection: 65.00
   }
 };
 
@@ -61,6 +63,9 @@ const CORS = {
 
 const DEFAULT_BATCH_SIZE = 5;
 const DEFAULT_DELAY_MS = 500;
+const DEFAULT_GROWTH_MAX_PROSPECTS = 100;
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const PAYPAL_API_BASE = 'https://api-m.paypal.com';
 
 const TX_CITIES_20 = [
   'Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth', 'El Paso', 'Arlington',
@@ -71,10 +76,11 @@ const GROWTH_DELAY_MS = 400;
 const GROWTH_DELAY_ON_RATE_LIMIT = 2000;
 
 const GROWTH_VERTICALS = [
-  { q: 'construction company', cat: 'residential' },
-  { q: 'roofing company', cat: 'residential' },
-  { q: 'painting contractor', cat: 'residential' },
-  { q: 'remodeling contractor', cat: 'residential' }
+  { q: 'residential construction contractor', cat: 'residential', specialty: 'construccion residencial' },
+  { q: 'commercial general contractor', cat: 'commercial', specialty: 'construccion comercial' },
+  { q: 'permit expediter construction', cat: 'permits', specialty: 'gestion de permisos' },
+  { q: 'roofing contractor', cat: 'residential', specialty: 'techos residenciales' },
+  { q: 'tenant improvement contractor', cat: 'commercial', specialty: 'remodelacion comercial' }
 ];
 
 function isValidEmail(str) {
@@ -148,7 +154,7 @@ async function handleApifyWebhook(request, env) {
       const valid = await verifyApifySignature(JSON.stringify(body), sig, env.APIFY_WEBHOOK_SECRET);
       if (!valid) return jsonResp({ error: 'Invalid signature' }, 401);
     }
-    const main_category = (body.main_category || body.mainCategory || 'residential').toLowerCase();
+    const main_category = normalizeMainCategory(body.main_category || body.mainCategory || 'residential');
     const sub_service = (body.sub_service || body.subService || '').toLowerCase().replace(/\s+/g, '_');
     const price = getLeadPrice(main_category, sub_service);
     const zip = String(body.zip_code || body.zipCode || body.zip || '').replace(/\D/g, '').slice(0, 5);
@@ -220,7 +226,7 @@ async function handleApifyContractors(request, env) {
     const body = await request.json();
     const raw = Array.isArray(body) ? body : (body.items || [body]);
     const defaultZip = body.default_zip || body.defaultZip || body.zip_code || url.searchParams.get('default_zip') || url.searchParams.get('zip_code') || '';
-    const defaultCategory = (body.default_category || body.defaultCategory || url.searchParams.get('default_category') || 'residential').toLowerCase();
+    const defaultCategory = normalizeMainCategory(body.default_category || body.defaultCategory || url.searchParams.get('default_category') || 'residential');
 
     if (!['residential', 'commercial', 'permits'].includes(defaultCategory)) {
       return jsonResp({ error: 'default_category must be residential, commercial, or permits' }, 400);
@@ -240,7 +246,11 @@ async function handleApifyContractors(request, env) {
         companyName = firstProfile.profileName || firstProfile.profile_name || companyName;
       }
 
-      const safeZip = (zip && /^\d{5}$/.test(String(zip))) ? zip : (defaultZip && /^\d{5}$/.test(String(defaultZip).replace(/\D/g, '').slice(0, 5)) ? String(defaultZip).replace(/\D/g, '').slice(0, 5) : null;
+      const safeZip = (zip && /^\d{5}$/.test(String(zip)))
+        ? zip
+        : (defaultZip && /^\d{5}$/.test(String(defaultZip).replace(/\D/g, '').slice(0, 5))
+          ? String(defaultZip).replace(/\D/g, '').slice(0, 5)
+          : null);
       if (!safeZip) continue;
 
       for (const e of emails) {
@@ -275,15 +285,23 @@ async function handleApifyContractors(request, env) {
 
 async function handlePayPalWebhook(request, env) {
   try {
-    const body = await request.text();
-    const headers = Object.fromEntries(request.headers);
-    if (env.PAYPAL_WEBHOOK_SECRET) {
-      const valid = await verifyPayPalWebhook(env, request, body);
-      if (!valid) return jsonResp({ error: 'Invalid PayPal signature' }, 401);
+    if (!env.PAYPAL_WEBHOOK_ID || !env.PAYPAL_CLIENT_ID || !env.PAYPAL_CLIENT_SECRET) {
+      return jsonResp({ error: 'Missing PayPal webhook configuration' }, 500);
     }
+    const body = await request.text();
+    const valid = await verifyPayPalWebhook(env, request, body);
+    if (!valid) return jsonResp({ error: 'Invalid PayPal signature' }, 401);
+
     const data = JSON.parse(body);
     if (data.event_type !== 'PAYMENT.CAPTURE.COMPLETED') return jsonResp({ received: true });
-    const cap = data.resource;
+    const cap = data.resource || {};
+    if (!cap.id) return jsonResp({ error: 'Missing PayPal capture id' }, 400);
+
+    const existingTx = await getTransactionByCaptureId(env, cap.id);
+    if (existingTx) {
+      return jsonResp({ ok: true, duplicate: true, transaction_id: existingTx.id });
+    }
+
     const customId = cap.purchase_units?.[0]?.custom_id || cap.custom_id;
     let meta = {};
     try { meta = JSON.parse(customId || '{}'); } catch (_) {}
@@ -293,6 +311,22 @@ async function handlePayPalWebhook(request, env) {
     const contractor = await supabaseGet(env, 'b2b_contractors', contractorId);
     const lead = await supabaseGet(env, 'b2b_leads', leadId);
     if (!contractor || !lead) return jsonResp({ error: 'Not found' }, 404);
+    if (lead.status === 'sold' && lead.sold_to_contractor_id) {
+      return jsonResp({ error: 'Lead already sold' }, 409);
+    }
+
+    const paidAmount = Number(cap.amount?.value || 0);
+    const expectedAmount = Number(lead.lead_price || 0);
+    if (!Number.isFinite(paidAmount) || Math.abs(paidAmount - expectedAmount) > 0.009) {
+      await logAudit(env, 'b2b_transactions', cap.id, 'payment_mismatch', {
+        lead_id: leadId,
+        contractor_id: contractorId,
+        paypal_capture_id: cap.id,
+        paid_amount: paidAmount,
+        expected_amount: expectedAmount
+      });
+      return jsonResp({ error: 'Amount mismatch' }, 409);
+    }
 
     await logAudit(env, 'b2b_leads', leadId, 'status_change', {
       from: lead.status,
@@ -308,10 +342,12 @@ async function handlePayPalWebhook(request, env) {
       sold_at: new Date().toISOString()
     });
 
+    const paypalOrderId = cap.supplementary_data?.related_ids?.order_id || null;
     const tx = await supabaseInsert(env, 'b2b_transactions', {
       lead_id: leadId,
       contractor_id: contractorId,
       amount: lead.lead_price,
+      paypal_payment_id: paypalOrderId,
       paypal_capture_id: cap.id,
       status: 'completed'
     });
@@ -320,6 +356,7 @@ async function handlePayPalWebhook(request, env) {
       lead_id: leadId,
       contractor_id: contractorId,
       amount: lead.lead_price,
+      paypal_payment_id: paypalOrderId,
       paypal_capture_id: cap.id
     });
 
@@ -336,6 +373,16 @@ function getLeadPrice(mainCategory, subService) {
   return cat[subService] || cat['default'];
 }
 
+function normalizeMainCategory(value) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return 'residential';
+  if (raw === 'residencial') return 'residential';
+  if (raw === 'comercial') return 'commercial';
+  if (raw === 'permisos') return 'permits';
+  if (['residential', 'commercial', 'permits'].includes(raw)) return raw;
+  return 'residential';
+}
+
 async function verifyApifySignature(payload, signature, secret) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -345,23 +392,35 @@ async function verifyApifySignature(payload, signature, secret) {
 }
 
 async function verifyPayPalWebhook(env, request, body) {
-  const headers = Object.fromEntries(request.headers);
-  const resp = await fetch('https://api-m.paypal.com/v1/notifications/verify-webhook-signature', {
+  const authAlgo = request.headers.get('paypal-auth-algo');
+  const certUrl = request.headers.get('paypal-cert-url');
+  const transmissionId = request.headers.get('paypal-transmission-id');
+  const transmissionSig = request.headers.get('paypal-transmission-sig');
+  const transmissionTime = request.headers.get('paypal-transmission-time');
+  if (!authAlgo || !certUrl || !transmissionId || !transmissionSig || !transmissionTime) {
+    return false;
+  }
+
+  const resp = await fetch(`${PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Basic ' + btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET)
     },
     body: JSON.stringify({
-      auth_algo: headers['paypal-auth-algo'],
-      cert_url: headers['paypal-cert-url'],
-      transmission_id: headers['paypal-transmission-id'],
-      transmission_sig: headers['paypal-transmission-sig'],
-      transmission_time: headers['paypal-transmission-time'],
+      auth_algo: authAlgo,
+      cert_url: certUrl,
+      transmission_id: transmissionId,
+      transmission_sig: transmissionSig,
+      transmission_time: transmissionTime,
       webhook_id: env.PAYPAL_WEBHOOK_ID,
       webhook_event: JSON.parse(body)
     })
   });
+  if (!resp.ok) {
+    console.error('[paypal-verify]', resp.status, await resp.text());
+    return false;
+  }
   const d = await resp.json();
   return d.verification_status === 'SUCCESS';
 }
@@ -434,13 +493,16 @@ async function millionVerify(env, email) {
 
 async function createPayPalOrder(env, leadId, contractorId, amount, mainCategory, subService) {
   const auth = btoa(env.PAYPAL_CLIENT_ID + ':' + env.PAYPAL_CLIENT_SECRET);
-  const tokenResp = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+  const tokenResp = await fetch(`${PAYPAL_API_BASE}/v1/oauth2/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + auth },
     body: 'grant_type=client_credentials'
   });
+  if (!tokenResp.ok) {
+    throw new Error('PayPal token request failed');
+  }
   const tok = (await tokenResp.json()).access_token;
-  const orderResp = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+  const orderResp = await fetch(`${PAYPAL_API_BASE}/v2/checkout/orders`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -459,6 +521,9 @@ async function createPayPalOrder(env, leadId, contractorId, amount, mainCategory
       }
     })
   });
+  if (!orderResp.ok) {
+    throw new Error('PayPal order creation failed');
+  }
   const order = await orderResp.json();
   const link = order.links?.find(l => l.rel === 'approve');
   return link?.href || null;
@@ -639,9 +704,12 @@ async function runGrowthAgentHttp(env) {
 }
 
 async function runGrowthAgentCore(env) {
-  const maxProspects = 50;
+  const maxProspects = Number(env.GROWTH_MAX_PROSPECTS) || DEFAULT_GROWTH_MAX_PROSPECTS;
   const joinBase = env.GROWTH_JOIN_BASE || env.BASE_URL || '';
   const joinUrlBase = joinBase ? (joinBase.includes('partth.com') ? 'https://partth.com/join' : `${joinBase.replace(/\/$/, '')}/api/join`) : '';
+  if (!env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY no configurada');
+  }
   if (!joinUrlBase) {
     console.warn('[growth-agent] GROWTH_JOIN_BASE no configurado');
     return 0;
@@ -669,12 +737,18 @@ async function runGrowthAgentCore(env) {
         if (exists) continue;
 
         seenEmails.add(email.toLowerCase());
-        const specialty = v.q.replace(' company', '').replace(' contractor', '');
-        const pitch = await generatePitchOpenAI(env, city, specialty, leadsInCity);
-        if (!pitch) continue;
+        const specialty = v.specialty || v.q.replace(' company', '').replace(' contractor', '');
+        const intel = await generateProspectIntelGemini(env, {
+          city,
+          specialty,
+          companyName: p.company_name || '',
+          leadsCount: leadsInCity,
+          vertical: v.cat
+        });
+        if (!intel?.pitch) continue;
 
         const joinUrl = `${joinUrlBase}?email=${encodeURIComponent(email)}&company=${encodeURIComponent(p.company_name || '')}&city=${encodeURIComponent(city)}`;
-        const rateLimited = await sendProspectEmail(env, { ...p, email }, pitch, joinUrl, city, specialty, leadsInCity);
+        const rateLimited = await sendProspectEmail(env, { ...p, email }, intel, joinUrl, city, specialty, leadsInCity);
         if (rateLimited) {
           await sleep(GROWTH_DELAY_ON_RATE_LIMIT);
         }
@@ -729,42 +803,73 @@ async function contractorExists(env, email) {
   return Array.isArray(arr) && arr.length > 0;
 }
 
-async function generatePitchOpenAI(env, city, specialty, leadsCount) {
-  const key = env.OPENAI_API_KEY;
-  if (!key) return null;
-  const system = `Eres del equipo de Inteligencia de Partth, la autoridad en datos de construcción en Texas. Escribe mensajes breves, profesionales y directos. Nunca menciones que eres IA. Tono: humano ocupado, con sentido de urgencia. Solo texto plano, sin saludos genéricos largos. Máximo 4-5 líneas. SIEMPRE menciona la ciudad explícitamente y el número de oportunidades si es > 0.`;
-  const user = `Genera un mensaje para un contratista de ${specialty} en ${city}, Texas. Hay ${leadsCount} oportunidades activas en su zona ahora. Invítalo a registrarse para acceder.`;
+function parseGeminiJson(text) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch (_) {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) return null;
+    try {
+      return JSON.parse(text.slice(start, end + 1));
+    } catch (__){
+      return null;
+    }
+  }
+}
+
+async function generateProspectIntelGemini(env, { city, specialty, companyName, leadsCount, vertical }) {
+  const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  const prompt = `Eres PARTTH Intelligence. Analiza y segmenta al contratista y redacta un correo B2B.
+Reglas de tono:
+- socio estrategico
+- inteligencia de alto valor
+- proteccion de margen del contratista
+- prohibido urgencia barata o spam
+
+Responde EXCLUSIVAMENTE JSON valido con este schema:
+{
+  "segment": "string corto",
+  "subject": "string <= 80 chars",
+  "pitch": "max 5 lineas, profesional, menciona ciudad y oportunidad real"
+}
+
+Datos:
+- ciudad: ${city}
+- especialidad: ${specialty}
+- vertical: ${vertical}
+- empresa: ${companyName || 'N/A'}
+- oportunidades_activas: ${leadsCount}`;
+
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const r = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + key,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-          max_tokens: 150,
-          temperature: 0.7
-        })
+      const resp = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: prompt,
+        config: {
+          temperature: 0.35,
+          responseMimeType: 'application/json'
+        }
       });
-      if (r.status === 429) {
-        const retryAfter = parseInt(r.headers.get('retry-after') || '5', 10) * 1000;
-        await sleep(Math.min(retryAfter, 10000));
-        continue;
-      }
-      const d = await r.json();
-      return d.choices?.[0]?.message?.content?.trim() || null;
+
+      const parsed = parseGeminiJson(resp.text || '');
+      if (!parsed?.pitch) throw new Error('Gemini payload invalido');
+      return {
+        segment: String(parsed.segment || 'general_texas').slice(0, 64),
+        subject: String(parsed.subject || `Oportunidades en ${city} — PARTTH`).slice(0, 80),
+        pitch: String(parsed.pitch || '').trim()
+      };
     } catch (e) {
-      if (attempt === 2) return null;
+      if (attempt === 2) throw e;
       await sleep(2000 * (attempt + 1));
     }
   }
-  return null;
+  throw new Error('No se pudo obtener respuesta de Gemini');
 }
 
-async function sendProspectEmail(env, prospect, pitch, joinUrl, city, specialty, leadsInCity) {
+async function sendProspectEmail(env, prospect, intel, joinUrl, city, specialty, leadsInCity) {
+  const pitch = intel.pitch;
   const html = `
 <div style="font-family:Georgia,serif;max-width:580px;margin:0 auto;padding:24px">
 <p style="font-size:15px;line-height:1.6;color:#1a1a1a">${pitch.replace(/\n/g, '<br>')}</p>
@@ -777,7 +882,7 @@ async function sendProspectEmail(env, prospect, pitch, joinUrl, city, specialty,
     body: JSON.stringify({
       from: env.FROM_EMAIL || 'PARTTH Inteligencia <leads@partth.com>',
       to: prospect.email,
-      subject: `Oportunidades en ${prospect.city} — Partth`,
+      subject: intel.subject || `Oportunidades en ${prospect.city} — Partth`,
       html
     })
   });
@@ -787,7 +892,7 @@ async function sendProspectEmail(env, prospect, pitch, joinUrl, city, specialty,
       email: prospect.email,
       company_name: prospect.company_name,
       city: city || prospect.city,
-      specialty,
+      specialty: `${specialty} | ${intel.segment || 'general_texas'}`,
       leads_in_city: leadsInCity || 0,
       pitch
     });
@@ -876,4 +981,15 @@ async function processQueue(env) {
       console.error('[queue] lead', lead.id, e);
     }
   }
+}
+
+async function getTransactionByCaptureId(env, captureId) {
+  const r = await fetch(`${env.SUPABASE_URL}/rest/v1/b2b_transactions?paypal_capture_id=eq.${encodeURIComponent(captureId)}&select=id`, {
+    headers: {
+      'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
+      'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY
+    }
+  });
+  const arr = await r.json();
+  return Array.isArray(arr) && arr[0] ? arr[0] : null;
 }

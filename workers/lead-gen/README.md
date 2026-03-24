@@ -39,9 +39,9 @@ wrangler deploy
 
 ## Growth Agent (Agente de Crecimiento)
 
-Cron diario 6:00 AM San Antonio. Busca en SerpApi (construcción, techos, pintura, remodelación) en 20 ciudades TX. MillionVerifier en cada correo. GPT-4o genera pitch personalizado. Resend envía con enlace a registro.
+Cron diario 6:00 AM San Antonio. Busca en SerpApi (residencial, comercial y permisos) en 20 ciudades TX. MillionVerifier valida cada correo. Gemini (SDK oficial) hace segmentación y redacta mensajes B2B. Resend envía con enlace a registro.
 
-Secrets: `OPENAI_API_KEY`, `GROWTH_JOIN_BASE` (URL Worker, ej. https://lead-gen.xxx.workers.dev)
+Secrets: `GEMINI_API_KEY`, `GROWTH_JOIN_BASE` (URL Worker, ej. https://lead-gen.xxx.workers.dev)
 
 ## Control de concurrencia (alto volumen)
 
