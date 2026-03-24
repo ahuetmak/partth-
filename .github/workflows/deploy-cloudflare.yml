@@ -4,7 +4,7 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, cursor/cursor-verificaci-n-ventas-partth-fb17]
   workflow_dispatch:
 
 jobs:
