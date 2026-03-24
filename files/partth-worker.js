@@ -215,11 +215,7 @@ export default {
       });
     }
 
-    // Default: proxy to Cloudflare Pages (index.html)
-    // Si tienes Pages, cambia la URL aquí:
-    // return fetch('https://partth.pages.dev' + path, request);
-
-    // Por ahora: redirigir a Pages o servir desde KV
-    return Response.redirect('https://partth.pages.dev' + path, 301);
+    // Default: mantener dominio único en partth.com
+    return Response.redirect('https://partth.com' + path, 301);
   }
 };

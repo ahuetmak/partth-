@@ -28,12 +28,12 @@ PayPal tiene **2 webhooks distintos**:
 - Otro para **B2B Lead Gen** → hay que añadirlo
 
 **Añade este webhook en PayPal Developer:**
-- URL: `https://TU-WORKER-URL.workers.dev/api/paypal-webhook`
+- URL: `https://partth.com/api/paypal/webhook`
 - Eventos: `PAYMENT.CAPTURE.COMPLETED`
 
 ### 3. Configurar Apify (cuando lo tengas)
 
-URL del webhook: `https://TU-WORKER-URL.workers.dev/api/apify-webhook`
+URL del webhook: `https://partth.com/api/apify-webhook`
 
 Hasta entonces, los leads pueden entrar manualmente o por script.
 

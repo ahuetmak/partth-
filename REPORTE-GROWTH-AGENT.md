@@ -5,10 +5,8 @@
 **Comando para ejecutar:**
 
 ```bash
-curl -X POST https://TU-WORKER-URL.workers.dev/api/growth-agent
+curl -X POST https://partth.com/api/growth-agent
 ```
-
-Reemplaza `TU-WORKER-URL` por tu URL real (ej. `lead-gen.tu-cuenta`).
 
 Alternativa con npm:
 ```bash
@@ -22,7 +20,7 @@ cd workers/lead-gen && npm run growth-run
 
 | API | Manejo 429 | Acción |
 |-----|------------|--------|
-| **OpenAI** | ✅ Reintentos con backoff | `Retry-After` o 5s, máx 3 intentos |
+| **Gemini** | ✅ Reintentos con backoff | Reintentos progresivos, máx 3 intentos |
 | **MillionVerifier** | ✅ Sleep 2s en 429, 3 intentos | No detiene flujo |
 | **Resend** | ✅ Detecta 429 | Sleep 2s adicional antes del siguiente correo |
 | **SerpApi** | ✅ `retryWithBackoff` existente | Backoff exponencial |
@@ -54,7 +52,7 @@ LIMIT 5;
 
 La tabla `growth_agent_sends` registra cada correo enviado con ciudad, especialidad, leads en zona y pitch completo. Revisar tras Run #2.
 
-**Prompt GPT-4o:** Incluye instrucción explícita de mencionar ciudad y número de oportunidades. Tono: humano ocupado, equipo Inteligencia Partth.
+**Prompt Gemini:** Incluye instrucción explícita de mencionar ciudad y número de oportunidades. Tono: socio estratégico, inteligencia de alto valor y protección de margen.
 
 ---
 

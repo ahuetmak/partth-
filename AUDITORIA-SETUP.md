@@ -20,7 +20,7 @@
 | Pages proyecto "partth" | Configurado |
 | GitHub Action deploy | Direct Upload (files/) |
 | Secrets CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID | En GitHub |
-| Worker partth-worker.js | En repo — redirige a partth.pages.dev |
+| Worker partth-worker.js | En repo — operativo para partth.com |
 | _redirects | Rutas SEO + legales |
 | sitemap.xml (estático) | Actualizado con quien-somos, privacy, terms, cookie |
 

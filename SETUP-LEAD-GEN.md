@@ -26,12 +26,12 @@ npx wrangler secret put PAYPAL_CLIENT_SECRET
 npx wrangler deploy
 ```
 
-Obtén la URL del Worker (ej: `https://lead-gen.tu-account.workers.dev`).
+Base pública única: `https://partth.com`.
 
 ## 3. Apify
 
 En tu Actor de Apify → Webhooks:
-- URL: `https://lead-gen.tu-account.workers.dev/api/apify-webhook`
+- URL: `https://partth.com/api/apify-webhook`
 - Método: POST
 - Payload esperado: `main_category`, `sub_service`, `zip_code`, `prospect_name`, `prospect_phone`, `prospect_email`, `city`
 
@@ -39,7 +39,7 @@ En tu Actor de Apify → Webhooks:
 
 1. Crear app en developer.paypal.com
 2. Webhooks → Add Webhook
-3. URL: `https://lead-gen.tu-account.workers.dev/api/paypal-webhook`
+3. URL: `https://partth.com/api/paypal/webhook`
 4. Evento: `PAYMENT.CAPTURE.COMPLETED`
 5. Secret en Worker: `wrangler secret put PAYPAL_WEBHOOK_SECRET`
 6. Webhook ID: `wrangler secret put PAYPAL_WEBHOOK_ID`

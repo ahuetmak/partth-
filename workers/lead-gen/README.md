@@ -41,7 +41,7 @@ wrangler deploy
 
 Cron diario 6:00 AM San Antonio. Busca en SerpApi (residencial, comercial y permisos) en 20 ciudades TX. MillionVerifier valida cada correo. Gemini (SDK oficial) hace segmentación y redacta mensajes B2B. Resend envía con enlace a registro.
 
-Secrets: `GEMINI_API_KEY`, `GROWTH_JOIN_BASE` (URL Worker, ej. https://lead-gen.xxx.workers.dev)
+Secrets: `GEMINI_API_KEY`, `GROWTH_JOIN_BASE` (URL base, ej. `https://partth.com`)
 
 ## Control de concurrencia (alto volumen)
 
@@ -59,5 +59,5 @@ Variables opcionales (`wrangler secret put` o `.dev.vars`):
 
 ## Webhooks
 
-1. **Apify**: `https://lead-gen.xxx.workers.dev/api/apify-webhook`
-2. **PayPal**: `https://lead-gen.xxx.workers.dev/api/paypal-webhook`
+1. **Apify**: `https://partth.com/api/apify-webhook`
+2. **PayPal**: `https://partth.com/api/paypal-webhook`
