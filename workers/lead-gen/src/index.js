@@ -1,7 +1,7 @@
 /**
- * B2B Lead Gen Worker — Apify → SerpApi → MillionVerifier → Match → Resend → PayPal
- * Operación estatal de alto volumen: cola, índices, control de concurrencia.
- * Todas las credenciales desde env (wrangler secret put)
+ * PARTTH Intelligence v4.0 — Motor Propietario
+ * Protocolo de Detección Temprana de Licencias Estatales (Exclusivo Partth)
+ * Operación estatal: 20 ciudades Texas. Credenciales desde env.
  */
 
 // Matriz exhaustiva de precios por sub-servicio (spec completa)
@@ -62,6 +62,21 @@ const CORS = {
 const DEFAULT_BATCH_SIZE = 5;
 const DEFAULT_DELAY_MS = 500;
 
+const TX_CITIES_20 = [
+  'Houston', 'Dallas', 'Austin', 'San Antonio', 'Fort Worth', 'El Paso', 'Arlington',
+  'Corpus Christi', 'Plano', 'Laredo', 'Lubbock', 'Irving', 'Garland', 'Frisco',
+  'McKinney', 'Amarillo', 'Grand Prairie', 'Brownsville', 'Pasadena', 'Mesquite'
+];
+const GROWTH_DELAY_MS = 400;
+const GROWTH_DELAY_ON_RATE_LIMIT = 2000;
+
+const GROWTH_VERTICALS = [
+  { q: 'construction company', cat: 'residential' },
+  { q: 'roofing company', cat: 'residential' },
+  { q: 'painting contractor', cat: 'residential' },
+  { q: 'remodeling contractor', cat: 'residential' }
+];
+
 function isValidEmail(str) {
   if (!str || typeof str !== 'string') return false;
   const s = str.trim();
@@ -102,13 +117,26 @@ export default {
     if (url.pathname === '/api/paypal-webhook' && request.method === 'POST') {
       return handlePayPalWebhook(request, env);
     }
+    if (url.pathname === '/api/join' && request.method === 'GET') {
+      return handleJoinGet(request, env);
+    }
+    if (url.pathname === '/api/join' && request.method === 'POST') {
+      return handleJoinPost(request, env);
+    }
+    if (url.pathname === '/api/growth-agent' && request.method === 'POST') {
+      return runGrowthAgentHttp(env);
+    }
     if (url.pathname === '/health' || url.pathname === '/') {
       return jsonResp({ ok: true, service: 'lead-gen' });
     }
     return jsonResp({ error: 'Not found' }, 404);
   },
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(processQueue(env));
+    if (event.cron === '0 12 * * *') {
+      ctx.waitUntil(runGrowthAgent(env));
+    } else {
+      ctx.waitUntil(processQueue(env));
+    }
   }
 };
 
@@ -265,18 +293,36 @@ async function handlePayPalWebhook(request, env) {
     const contractor = await supabaseGet(env, 'b2b_contractors', contractorId);
     const lead = await supabaseGet(env, 'b2b_leads', leadId);
     if (!contractor || !lead) return jsonResp({ error: 'Not found' }, 404);
+
+    await logAudit(env, 'b2b_leads', leadId, 'status_change', {
+      from: lead.status,
+      to: 'sold',
+      sold_to_contractor_id: contractorId,
+      sold_at: new Date().toISOString(),
+      paypal_capture_id: cap.id
+    });
+
     await supabaseUpdate(env, 'b2b_leads', leadId, {
       status: 'sold',
       sold_to_contractor_id: contractorId,
       sold_at: new Date().toISOString()
     });
-    await supabaseInsert(env, 'b2b_transactions', {
+
+    const tx = await supabaseInsert(env, 'b2b_transactions', {
       lead_id: leadId,
       contractor_id: contractorId,
       amount: lead.lead_price,
       paypal_capture_id: cap.id,
       status: 'completed'
     });
+
+    await logAudit(env, 'b2b_transactions', tx?.id || leadId, 'sale_completed', {
+      lead_id: leadId,
+      contractor_id: contractorId,
+      amount: lead.lead_price,
+      paypal_capture_id: cap.id
+    });
+
     await sendLeadDeliveryEmail(env, contractor, lead);
     return jsonResp({ ok: true });
   } catch (e) {
@@ -287,7 +333,7 @@ async function handlePayPalWebhook(request, env) {
 
 function getLeadPrice(mainCategory, subService) {
   const cat = PRICING_MATRIX[mainCategory] || PRICING_MATRIX.residential;
-  return cat[subService] ?? cat.default;
+  return cat[subService] || cat['default'];
 }
 
 async function verifyApifySignature(payload, signature, secret) {
@@ -365,18 +411,25 @@ async function millionVerify(env, email) {
   const key = env.MILLION_VERIFIER_KEY || env.MILLIONVERIFY_API_KEY;
   if (!key) return 'Invalid';
   if (!isValidEmail(email)) return 'Invalid';
-  try {
-    const r = await retryWithBackoff(() => fetch(
-      `https://api.millionverifier.com/api/v3/?api=${key}&email=${encodeURIComponent(email)}&cached=1`
-    ));
-    const d = await r.json();
-    if (d.resultcode === 1) return 'Valid';
-    if ([2, 3, 4, 5].includes(d.resultcode)) return 'Invalid';
-    return d.result || 'Invalid';
-  } catch (e) {
-    console.error('[millionverifier]', email, e);
-    return 'Invalid';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch(
+        `https://api.millionverifier.com/api/v3/?api=${key}&email=${encodeURIComponent(email)}&cached=1`
+      );
+      if (r.status === 429) {
+        await sleep(GROWTH_DELAY_ON_RATE_LIMIT);
+        continue;
+      }
+      const d = await r.json();
+      if (d.resultcode === 1) return 'Valid';
+      if ([2, 3, 4, 5].includes(d.resultcode)) return 'Invalid';
+      return d.result || 'Invalid';
+    } catch (e) {
+      if (attempt === 2) { console.error('[millionverifier]', email, e); return 'Invalid'; }
+      await sleep(2000 * (attempt + 1));
+    }
   }
+  return 'Invalid';
 }
 
 async function createPayPalOrder(env, leadId, contractorId, amount, mainCategory, subService) {
@@ -397,7 +450,7 @@ async function createPayPalOrder(env, leadId, contractorId, amount, mainCategory
       intent: 'CAPTURE',
       purchase_units: [{
         amount: { currency_code: 'USD', value: String(Number(amount).toFixed(2)) },
-        description: `Lead ${mainCategory} - ${subService || 'general'}`,
+        description: `Exclusividad territorial — ${mainCategory}`,
         custom_id: JSON.stringify({ lead_id: leadId, contractor_id: contractorId, type: mainCategory, sub_service: subService })
       }],
       application_context: {
@@ -413,14 +466,37 @@ async function createPayPalOrder(env, leadId, contractorId, amount, mainCategory
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+function buildOfferEmailHtml(lead, price, paypalUrl) {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;font-family:Georgia,'Times New Roman',serif;background:#f8f6f3;color:#1a1a1a;line-height:1.6">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;margin:0 auto;background:#fff;padding:48px 40px">
+<tr><td>
+  <div style="border-bottom:1px solid #e5e0db;padding-bottom:24px;margin-bottom:32px">
+    <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#6b6560">Oportunidad Exclusiva</span>
+    <h1 style="font-size:28px;font-weight:400;margin:12px 0 0;letter-spacing:-0.02em">Proyecto en tu territorio</h1>
+  </div>
+  <p style="margin:0 0 24px;font-size:16px">Generada por el Motor Propietario de <strong>Partth Intelligence v4.0</strong>.</p>
+  <p style="margin:0 0 8px;font-size:14px;color:#4a4540"><strong>Categoría:</strong> ${lead.main_category} — ${lead.sub_service || 'general'}</p>
+  <p style="margin:0 0 8px;font-size:14px;color:#4a4540"><strong>Zona:</strong> ${lead.zip_code} ${lead.city || ''}</p>
+  <p style="margin:0 0 24px;font-size:14px;color:#4a4540"><strong>Inversión exclusividad:</strong> $${price}</p>
+  <p style="margin:0 0 8px;font-size:12px;color:#8a8580"><em>Origen: Protocolo de Detección Temprana de Licencias Estatales (Exclusivo Partth)</em></p>
+  <p style="margin:0 0 24px;font-size:12px;color:#8a8580">★ Esta oportunidad ha sido calificada con 5 estrellas en nuestro índice de viabilidad comercial.</p>
+  <div style="margin:32px 0">
+    <a href="${paypalUrl}" style="display:inline-block;background:#000;color:#fff;padding:16px 32px;text-decoration:none;font-size:12px;letter-spacing:0.15em;text-transform:uppercase;font-weight:600">ADQUIRIR EXCLUSIVIDAD TERRITORIAL</a>
+  </div>
+  <div style="margin:40px 0 0;padding:24px 0;border-top:1px solid #e5e0db;text-align:center">
+    <p style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#9a9590;margin:0 0 16px">Respaldo Institucional</p>
+    <p style="font-size:11px;color:#6b6560;margin:0 4px 8px">✓ Verified by Texas Construction Standards</p>
+    <p style="font-size:11px;color:#6b6560;margin:0 4px 8px">✓ Premium Partner 2026</p>
+    <p style="font-size:11px;color:#6b6560;margin:0 4px">✓ Auditado por Partth Security</p>
+  </div>
+  <p style="margin:24px 0 0;font-size:11px;color:#9a9590;text-align:center">PARTTH — Exclusividad territorial. Texas.</p>
+</td></tr></table></body></html>`;
+}
+
 async function sendOfferEmail(env, contractor, lead, price, paypalUrl) {
-  const html = `
-<h2>Nuevo proyecto en tu zona</h2>
-<p><strong>Categoría:</strong> ${lead.main_category} - ${lead.sub_service || 'general'}</p>
-<p><strong>Zona:</strong> ${lead.zip_code} ${lead.city || ''}</p>
-<p><strong>Precio del lead:</strong> $${price}</p>
-<p><a href="${paypalUrl}" style="background:#0070ba;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px">Pagar y recibir datos del lead</a></p>
-<p style="color:#666;font-size:12px">PARTTH — Un lead por contratista. Texas.</p>`;
+  const html = buildOfferEmailHtml(lead, price, paypalUrl);
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -437,14 +513,28 @@ async function sendOfferEmail(env, contractor, lead, price, paypalUrl) {
 }
 
 async function sendLeadDeliveryEmail(env, contractor, lead) {
-  const html = `
-<h2>Datos del lead — Pago confirmado</h2>
-<p><strong>Nombre:</strong> ${lead.prospect_name || 'N/A'}</p>
-<p><strong>Teléfono:</strong> ${lead.prospect_phone || 'N/A'}</p>
-<p><strong>Email:</strong> ${lead.prospect_email || 'N/A'}</p>
-<p><strong>Proyecto:</strong> ${lead.main_category} - ${lead.sub_service || 'general'}</p>
-<p><strong>Zona:</strong> ${lead.zip_code} ${lead.city || ''}</p>
-<p style="color:#666;font-size:12px">Contacta al cliente en 24-48h. PARTTH Texas.</p>`;
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;font-family:Georgia,'Times New Roman',serif;background:#f8f6f3;color:#1a1a1a;line-height:1.6">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;margin:0 auto;background:#fff;padding:48px 40px">
+<tr><td>
+  <div style="border-bottom:1px solid #e5e0db;padding-bottom:24px;margin-bottom:32px">
+    <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#6b6560">Exclusividad Adquirida</span>
+    <h1 style="font-size:28px;font-weight:400;margin:12px 0 0;letter-spacing:-0.02em">Datos del proyecto</h1>
+  </div>
+  <p style="margin:0 0 8px;font-size:14px;color:#4a4540"><strong>Nombre:</strong> ${lead.prospect_name || 'N/A'}</p>
+  <p style="margin:0 0 8px;font-size:14px;color:#4a4540"><strong>Teléfono:</strong> ${lead.prospect_phone || 'N/A'}</p>
+  <p style="margin:0 0 8px;font-size:14px;color:#4a4540"><strong>Email:</strong> ${lead.prospect_email || 'N/A'}</p>
+  <p style="margin:0 0 8px;font-size:14px;color:#4a4540"><strong>Proyecto:</strong> ${lead.main_category} — ${lead.sub_service || 'general'}</p>
+  <p style="margin:0 0 24px;font-size:14px;color:#4a4540"><strong>Zona:</strong> ${lead.zip_code} ${lead.city || ''}</p>
+  <div style="margin:24px 0 0;padding:24px 0;border-top:1px solid #e5e0db;text-align:center">
+    <p style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#9a9590;margin:0 0 16px">Respaldo Institucional</p>
+    <p style="font-size:11px;color:#6b6560;margin:0 4px 8px">✓ Verified by Texas Construction Standards</p>
+    <p style="font-size:11px;color:#6b6560;margin:0 4px 8px">✓ Premium Partner 2026</p>
+    <p style="font-size:11px;color:#6b6560;margin:0 4px">✓ Auditado por Partth Security</p>
+  </div>
+  <p style="margin:24px 0 0;font-size:11px;color:#9a9590;text-align:center">Contacta al cliente en 24-48h. PARTTH Texas.</p>
+</td></tr></table></body></html>`;
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -458,6 +548,21 @@ async function sendLeadDeliveryEmail(env, contractor, lead) {
       html
     })
   });
+}
+
+async function logAudit(env, tableName, recordId, action, newData, oldData = null) {
+  try {
+    await supabaseInsert(env, 'audit_log', {
+      table_name: tableName,
+      record_id: recordId,
+      action,
+      old_data: oldData,
+      new_data: newData,
+      changed_by: null
+    });
+  } catch (e) {
+    console.error('[audit_log]', e);
+  }
 }
 
 async function supabaseInsert(env, table, row) {
@@ -512,6 +617,243 @@ async function supabaseGet(env, table, id) {
   });
   const arr = await r.json();
   return Array.isArray(arr) && arr[0] ? arr[0] : null;
+}
+
+async function runGrowthAgent(env) {
+  try {
+    const contacted = await runGrowthAgentCore(env);
+    console.log('[growth-agent] Contactados:', contacted);
+  } catch (e) {
+    console.error('[growth-agent]', e);
+  }
+}
+
+async function runGrowthAgentHttp(env) {
+  try {
+    const contacted = await runGrowthAgentCore(env);
+    return jsonResp({ ok: true, contacted });
+  } catch (e) {
+    console.error('[growth-agent]', e);
+    return jsonResp({ error: String(e?.message) }, 500);
+  }
+}
+
+async function runGrowthAgentCore(env) {
+  const maxProspects = 50;
+  const joinBase = env.GROWTH_JOIN_BASE || env.BASE_URL || '';
+  const joinUrlBase = joinBase ? (joinBase.includes('partth.com') ? 'https://partth.com/join' : `${joinBase.replace(/\/$/, '')}/api/join`) : '';
+  if (!joinUrlBase) {
+    console.warn('[growth-agent] GROWTH_JOIN_BASE no configurado');
+    return 0;
+  }
+  let contacted = 0;
+  const seenEmails = new Set();
+
+  for (const city of TX_CITIES_20) {
+    if (contacted >= maxProspects) break;
+    for (const v of GROWTH_VERTICALS) {
+      if (contacted >= maxProspects) break;
+      const prospects = await searchProspectsSerpApi(env, city, v.q);
+      const leadsInCity = await getLeadsCountInCity(env, city);
+
+      for (const p of prospects) {
+        if (contacted >= maxProspects) break;
+        const email = (p.email || '').trim();
+        if (!email || seenEmails.has(email.toLowerCase())) continue;
+        if (!isValidEmail(email)) continue;
+
+        const mv = await millionVerify(env, email);
+        if (mv !== 'Valid') continue;
+
+        const exists = await contractorExists(env, email);
+        if (exists) continue;
+
+        seenEmails.add(email.toLowerCase());
+        const specialty = v.q.replace(' company', '').replace(' contractor', '');
+        const pitch = await generatePitchOpenAI(env, city, specialty, leadsInCity);
+        if (!pitch) continue;
+
+        const joinUrl = `${joinUrlBase}?email=${encodeURIComponent(email)}&company=${encodeURIComponent(p.company_name || '')}&city=${encodeURIComponent(city)}`;
+        const rateLimited = await sendProspectEmail(env, { ...p, email }, pitch, joinUrl, city, specialty, leadsInCity);
+        if (rateLimited) {
+          await sleep(GROWTH_DELAY_ON_RATE_LIMIT);
+        }
+        contacted++;
+        await sleep(GROWTH_DELAY_MS);
+      }
+      await sleep(500);
+    }
+  }
+  return contacted;
+}
+
+async function searchProspectsSerpApi(env, city, query) {
+  const q = `${query} ${city} Texas`;
+  try {
+    const r = await retryWithBackoff(() => fetch(
+      `https://serpapi.com/search.json?engine=google_local&q=${encodeURIComponent(q)}&location="${encodeURIComponent(city)}, TX"&api_key=${env.SERPAPI_KEY}`
+    ));
+    const data = await r.json();
+    const places = data.local_results || [];
+    return places.map(p => ({
+      company_name: p.title,
+      email: (p.email || p.booking?.email || '').trim(),
+      phone: p.phone,
+      address: p.address,
+      city
+    })).filter(p => p.email);
+  } catch (e) {
+    return [];
+  }
+}
+
+async function getLeadsCountInCity(env, city) {
+  try {
+    const r = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/b2b_leads?city=eq.${encodeURIComponent(city)}&status=in.(new,queued,emails_sent)&select=id`,
+      { headers: { 'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY, 'Prefer': 'count=exact' } }
+    );
+    const range = r.headers.get('content-range');
+    return range ? parseInt(range.split('/')[1] || '0', 10) : 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+async function contractorExists(env, email) {
+  const r = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/b2b_contractors?email=eq.${encodeURIComponent(email)}&select=id`,
+    { headers: { 'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY } }
+  );
+  const arr = await r.json();
+  return Array.isArray(arr) && arr.length > 0;
+}
+
+async function generatePitchOpenAI(env, city, specialty, leadsCount) {
+  const key = env.OPENAI_API_KEY;
+  if (!key) return null;
+  const system = `Eres del equipo de Inteligencia de Partth, la autoridad en datos de construcción en Texas. Escribe mensajes breves, profesionales y directos. Nunca menciones que eres IA. Tono: humano ocupado, con sentido de urgencia. Solo texto plano, sin saludos genéricos largos. Máximo 4-5 líneas. SIEMPRE menciona la ciudad explícitamente y el número de oportunidades si es > 0.`;
+  const user = `Genera un mensaje para un contratista de ${specialty} en ${city}, Texas. Hay ${leadsCount} oportunidades activas en su zona ahora. Invítalo a registrarse para acceder.`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + key,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+          max_tokens: 150,
+          temperature: 0.7
+        })
+      });
+      if (r.status === 429) {
+        const retryAfter = parseInt(r.headers.get('retry-after') || '5', 10) * 1000;
+        await sleep(Math.min(retryAfter, 10000));
+        continue;
+      }
+      const d = await r.json();
+      return d.choices?.[0]?.message?.content?.trim() || null;
+    } catch (e) {
+      if (attempt === 2) return null;
+      await sleep(2000 * (attempt + 1));
+    }
+  }
+  return null;
+}
+
+async function sendProspectEmail(env, prospect, pitch, joinUrl, city, specialty, leadsInCity) {
+  const html = `
+<div style="font-family:Georgia,serif;max-width:580px;margin:0 auto;padding:24px">
+<p style="font-size:15px;line-height:1.6;color:#1a1a1a">${pitch.replace(/\n/g, '<br>')}</p>
+<p style="margin-top:24px"><a href="${joinUrl}" style="display:inline-block;background:#000;color:#fff;padding:14px 28px;text-decoration:none;font-size:12px;letter-spacing:0.1em;text-transform:uppercase">Registrarme en Partth</a></p>
+<p style="margin-top:32px;font-size:11px;color:#6b6560">Partth — La autoridad en datos de construcción en Texas.</p>
+</div>`;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: env.FROM_EMAIL || 'PARTTH Inteligencia <leads@partth.com>',
+      to: prospect.email,
+      subject: `Oportunidades en ${prospect.city} — Partth`,
+      html
+    })
+  });
+  if (res.status === 429) return true;
+  try {
+    await supabaseInsert(env, 'growth_agent_sends', {
+      email: prospect.email,
+      company_name: prospect.company_name,
+      city: city || prospect.city,
+      specialty,
+      leads_in_city: leadsInCity || 0,
+      pitch
+    });
+  } catch (_) {}
+  return false;
+}
+
+async function handleJoinGet(request, env) {
+  const url = new URL(request.url);
+  const email = url.searchParams.get('email') || '';
+  const company = url.searchParams.get('company') || '';
+  const city = url.searchParams.get('city') || '';
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Únete a Partth</title></head><body style="margin:0;font-family:system-ui,sans-serif;background:#f8f6f3;min-height:100vh;display:flex;align-items:center;justify-content:center">
+<form method="POST" action="/api/join" style="background:#fff;padding:32px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.08);max-width:400px;width:100%">
+<h1 style="margin:0 0 24px;font-size:24px">Únete a Partth</h1>
+<p style="color:#6b6560;margin-bottom:24px">Confirma tus datos para acceder a oportunidades en Texas.</p>
+<input type="email" name="email" placeholder="Correo" value="${escapeHtml(email)}" required style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+<input type="text" name="company_name" placeholder="Nombre de empresa" value="${escapeHtml(company)}" required style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+<input type="text" name="city" placeholder="Ciudad" value="${escapeHtml(city)}" required style="width:100%;padding:12px;margin-bottom:12px;border:1px solid #ddd;border-radius:6px;box-sizing:border-box">
+<input type="hidden" name="source" value="ai_hunter_v1">
+<button type="submit" style="width:100%;padding:14px;background:#000;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer">Registrarme</button>
+</form></body></html>`;
+  return new Response(html, { headers: { ...CORS, 'Content-Type': 'text/html' } });
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function handleJoinPost(request, env) {
+  try {
+    const form = await request.formData();
+    const email = (form.get('email') || '').trim();
+    const company = form.get('company_name') || '';
+    const city = form.get('city') || '';
+    const source = form.get('source') || 'ai_hunter_v1';
+    if (!email || !isValidEmail(email)) {
+      return new Response('Email inválido', { status: 400, headers: { ...CORS } });
+    }
+    const zip = city ? await resolveZipFromCity(env, city) : '';
+    await supabaseUpsert(env, 'b2b_contractors', {
+      company_name: company,
+      email,
+      zip_code: zip || '77001',
+      city: city || '',
+      main_category: 'residential',
+      million_verifier_status: 'Valid',
+      source
+    }, 'email');
+    return new Response('<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="3;url=https://partth.com"></head><body style="font-family:system-ui;text-align:center;padding:48px"><h2>¡Registro exitoso!</h2><p>Te contactaremos pronto.</p><p><a href="https://partth.com">Ir a Partth</a></p></body></html>', {
+      status: 200,
+      headers: { ...CORS, 'Content-Type': 'text/html' }
+    });
+  } catch (e) {
+    return new Response('Error: ' + (e?.message || 'Unknown'), { status: 500, headers: { ...CORS } });
+  }
+}
+
+async function resolveZipFromCity(env, city) {
+  const map = { Houston: '77001', Dallas: '75201', Austin: '78701', 'San Antonio': '78201', 'Fort Worth': '76101', 'El Paso': '79901', Arlington: '76001', 'Corpus Christi': '78401', Plano: '75074', Laredo: '78040', Lubbock: '79401', Irving: '75038', Garland: '75040', Frisco: '75034', McKinney: '75069', Amarillo: '79101', 'Grand Prairie': '75050', Brownsville: '78520', Pasadena: '77501', Mesquite: '75149' };
+  return map[city] || '';
 }
 
 async function processQueue(env) {

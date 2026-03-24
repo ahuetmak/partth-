@@ -4,10 +4,11 @@ main = "src/index.js"
 compatibility_date = "2024-01-01"
 
 [vars]
+USE_QUEUE = "true"
 # Non-sensitive config; secrets via: wrangler secret put X
 # APIFY_WEBHOOK_SECRET, SERPAPI_KEY, MILLION_VERIFIER_KEY, RESEND_API_KEY,
 # PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
-# Cron para procesar cola de leads (USE_QUEUE=true)
+# Cron: cola cada 5 min | Growth Agent 6 AM San Antonio (12 UTC = 6 AM CST)
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["*/5 * * * *", "0 12 * * *"]

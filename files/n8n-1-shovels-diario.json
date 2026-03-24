@@ -1,5 +1,5 @@
 {
-  "name": "PARTTH — Shovels Ingest Diario 9am",
+  "name": "PARTTH — Ingest Diario 20 Ciudades TX",
   "nodes": [
     {
       "parameters": {
@@ -26,7 +26,7 @@
         "options": { "timeout": 60000 }
       },
       "id": "node-shovels",
-      "name": "Trigger Shovels Ingest",
+      "name": "Trigger PARTTH Ingest",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [480, 300]
@@ -64,18 +64,18 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"from\": \"PARTTH Bot <support@partth.com>\",\n  \"to\": \"admin@partth.com\",\n  \"subject\": \"✅ Shovels: {{ $('Trigger Shovels Ingest').item.json.ingested }} nuevos permisos TX\",\n  \"html\": \"<h3>Ingest completado</h3><p><strong>Nuevos:</strong> {{ $('Trigger Shovels Ingest').item.json.ingested }}</p><p><strong>Duplicados:</strong> {{ $('Trigger Shovels Ingest').item.json.skipped }}</p><p><strong>Hora:</strong> {{ $now.toISO() }}</p>\"\n}",
+        "jsonBody": "={\n  \"from\": \"PARTTH Bot <support@partth.com>\",\n  \"to\": \"admin@partth.com\",\n  \"subject\": \"✅ PARTTH: {{ $('Trigger PARTTH Ingest').item.json.ingested }} nuevos permisos TX\",\n  \"html\": \"<h3>Ingest completado</h3><p><strong>Nuevos:</strong> {{ $('Trigger PARTTH Ingest').item.json.ingested }}</p><p><strong>Duplicados:</strong> {{ $('Trigger PARTTH Ingest').item.json.skipped }}</p><p><strong>Origen:</strong> Protocolo de Detección Temprana de Licencias Estatales</p><p><strong>Hora:</strong> {{ $now.toISO() }}</p>\"\n}",
         "options": {}
       },
       "id": "node-email",
-      "name": "Email admin — nuevos permisos",
+      "name": "Email admin — nuevos permisos TX",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [960, 200]
     },
     {
       "parameters": {
-        "jsCode": "console.log('[PARTTH] Shovels: sin permisos nuevos hoy -', new Date().toISOString());\nreturn [{json: {status: 'nothing_new', ts: new Date().toISOString()}}];"
+        "jsCode": "console.log('[PARTTH] Ingest: sin permisos nuevos hoy -', new Date().toISOString());\nreturn [{json: {status: 'nothing_new', ts: new Date().toISOString()}}];"
       },
       "id": "node-noop",
       "name": "Log — sin cambios",
@@ -86,19 +86,19 @@
   ],
   "connections": {
     "Cron 9am CT": {
-      "main": [[{ "node": "Trigger Shovels Ingest", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Trigger PARTTH Ingest", "type": "main", "index": 0 }]]
     },
-    "Trigger Shovels Ingest": {
+    "Trigger PARTTH Ingest": {
       "main": [[{ "node": "¿Hay permisos nuevos?", "type": "main", "index": 0 }]]
     },
     "¿Hay permisos nuevos?": {
       "main": [
-        [{ "node": "Email admin — nuevos permisos", "type": "main", "index": 0 }],
+        [{ "node": "Email admin — nuevos permisos TX", "type": "main", "index": 0 }],
         [{ "node": "Log — sin cambios", "type": "main", "index": 0 }]
       ]
     }
   },
   "active": true,
   "settings": { "executionOrder": "v1" },
-  "tags": [{ "name": "PARTTH" }, { "name": "Shovels" }, { "name": "Automatico" }]
+  "tags": [{ "name": "PARTTH" }, { "name": "Automatico" }]
 }

@@ -32,7 +32,16 @@ wrangler deploy
 - `POST /api/apify-webhook` — Recibe datos de Apify (leads)
 - `POST /api/apify-contractors` — Ingesta contractors desde Apify (emails + facebookProfiles)
 - `POST /api/paypal-webhook` — Recibe confirmación de pago PayPal
+- `GET /api/join` — Página de registro (formulario prefilled)
+- `POST /api/join` — Registrar prospecto → b2b_contractors (source=ai_hunter_v1)
+- `POST /api/growth-agent` — Disparo manual del Agente de Crecimiento
 - `GET /health` — Health check
+
+## Growth Agent (Agente de Crecimiento)
+
+Cron diario 6:00 AM San Antonio. Busca en SerpApi (construcción, techos, pintura, remodelación) en 20 ciudades TX. MillionVerifier en cada correo. GPT-4o genera pitch personalizado. Resend envía con enlace a registro.
+
+Secrets: `OPENAI_API_KEY`, `GROWTH_JOIN_BASE` (URL Worker, ej. https://lead-gen.xxx.workers.dev)
 
 ## Control de concurrencia (alto volumen)
 
