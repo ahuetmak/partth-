@@ -1,26 +1,28 @@
-# Deploy a Cloudflare Pages (GitHub → Cloudflare Direct Upload)
-# Evita fallas de conexión: GitHub empuja a Cloudflare en lugar de que Cloudflare tire
-name: Deploy to Cloudflare Pages
+# Deploy Cloudflare Worker with static assets (GitHub → Cloudflare via Wrangler)
+name: Deploy to Cloudflare
 
 on:
   push:
-    branches: [main, cursor/cursor-verificaci-n-ventas-partth-fb17]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          apiToken: ${{ secrets.API_CLOUDFLARE }}
-          accountId: ${{ secrets.ID_CUENTA_CLOUDFLARE }}
-          projectName: partth
-          directory: files
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          node-version: "24"
+
+      - name: Deploy Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.API_CLOUDFLARE }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.ID_CUENTA_CLOUDFLARE }}
+        run: npx wrangler deploy
 
       - name: Purge Cloudflare cache (partth.com)
         continue-on-error: true

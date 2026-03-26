@@ -3,7 +3,7 @@ name: SEO IndexNow
 
 on:
   workflow_run:
-    workflows: ["Deploy to Cloudflare Pages"]
+    workflows: ["Deploy to Cloudflare"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
