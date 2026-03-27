@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PARTTH Intelligence | Orquestador de Leads Elite Texas</title>
+    
+    <!-- Frameworks y Fuentes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@300;600&display=swap" rel="stylesheet">
+    
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-MVBX27K6');</script>
+    
+    <!-- Meta Pixel Code -->
+    <script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init', '25233196896353797');fbq('track', 'PageView');</script>
+
+    <style>
+        :root { --gold: #D4AF37; --dark: #0a0a0a; --gray: #1a1a1a; }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--dark); color: white; overflow-x: hidden; }
+        .gold-text { background: linear-gradient(to right, #D4AF37, #F1D592); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gold-bg { background: linear-gradient(135deg, #D4AF37, #B8860B); }
+        .shield-border { border: 2px solid var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+        .glass { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(15px); border: 1px solid rgba(212, 175, 55, 0.1); }
+        .exclusive-badge { background: linear-gradient(90deg, #D4AF37, #000); padding: 2px 10px; border-radius: 4px; font-size: 10px; font-weight: 900; color: gold; border: 1px solid gold; }
+        
+        /* Animación de marcas */
+        .carousel { display: flex; width: calc(250px * 10); animation: scroll 40s linear infinite; }
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(calc(-250px * 5)); } }
+        
+        .construction-bg { 
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), 
+            url('https://images.unsplash.com/photo-1541888946425-d81bb19480c5?auto=format&fit=crop&q=80');
+            background-size: cover; background-position: center;
+        }
+    </style>
+</head>
+<body>
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MVBX27K6" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <!-- VISTA 1: LANDING / ACCESO RESTRINGIDO -->
+    <section id="login-screen" class="min-h-screen flex flex-col items-center justify-center p-6 construction-bg">
+        <div class="relative z-10 w-full max-w-md text-center">
+            <!-- Logo Escudo Partth -->
+            <div class="inline-block mb-8 p-6 shield-border rounded-3xl bg-black">
+                <span class="text-7xl font-black gold-text">P</span>
+            </div>
+            
+            <h1 class="text-6xl font-black tracking-tighter italic uppercase mb-2">PARTTH</h1>
+            <h2 class="text-xl font-bold tracking-[0.5em] gold-text uppercase mb-12">Intelligence</h2>
+            
+            <div class="glass p-8 rounded-[2rem] shadow-2xl">
+                <p class="text-zinc-400 text-sm mb-6 font-bold tracking-widest uppercase">Portal de Contratistas Texas</p>
+                <div class="space-y-4">
+                    <input type="email" id="email-access" placeholder="Email Corporativo" class="w-full bg-zinc-900 border border-zinc-800 p-4 rounded-xl focus:border-[#D4AF37] outline-none transition text-white text-center">
+                    <button onclick="orchestrateAccess()" class="w-full gold-bg text-black font-black py-4 rounded-xl text-lg hover:scale-[1.02] transition transform shadow-lg shadow-yellow-900/20">
+                        INGRESAR AL SISTEMA →
+                    </button>
+                </div>
+            </div>
+            
+            <p class="mt-8 text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                Exclusividad Garantizada ● Sin Competencia ● Shovels & Permits Data
+            </p>
+        </div>
+
+        <!-- Marcas / Trust -->
+        <div class="absolute bottom-0 w-full overflow-hidden border-t border-white/5 py-10 bg-black/40">
+            <div class="carousel space-x-12 opacity-20 italic font-black uppercase tracking-widest text-xs">
+                <span>Dallas New Builds</span> <span>●</span> <span>Austin HVAC Permits</span> <span>●</span> <span>Houston Commercial Roofing</span> <span>●</span> <span>San Antonio Remodels</span> <span>●</span> <span>Fort Worth Electrical</span> <span>●</span>
+                <span>Dallas New Builds</span> <span>●</span> <span>Austin HVAC Permits</span> <span>●</span> <span>Houston Commercial Roofing</span> <span>●</span> <span>San Antonio Remodels</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- VISTA 2: DASHBOARD ORQUESTADOR (Oculto) -->
+    <section id="dashboard" class="hidden min-h-screen">
+        <nav class="border-b border-white/10 p-6 flex justify-between items-center bg-black/50 backdrop-blur-md sticky top-0 z-50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 border gold-border flex items-center justify-center font-black gold-text text-xs rounded">P</div>
+                <span class="font-black italic text-xl">PARTTH <span class="gold-text">INTEL</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="user-tag" class="text-[10px] bg-zinc-800 px-3 py-1 rounded-full text-zinc-400 font-bold tracking-widest"></span>
+                <button onclick="location.reload()" class="text-[10px] text-red-500 font-black uppercase">Salir</button>
+            </div>
+        </nav>
+
+        <div class="p-8 lg:p-12 max-w-7xl mx-auto">
+            <header class="mb-12">
+                <div class="flex items-center gap-4 mb-2">
+                    <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
+                    <span class="text-zinc-500 text-xs font-bold tracking-widest uppercase">Conexión en vivo: Texas Construction Grid</span>
+                </div>
+                <h1 class="text-4xl lg:text-6xl font-black uppercase italic tracking-tighter">Oportunidades de <span class="gold-text">Alto Valor</span></h1>
+            </header>
+
+            <!-- Filtros Inteligentes -->
+            <div class="flex flex-wrap gap-3 mb-12">
+                <button onclick="filterLeads('all')" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase hover:gold-bg hover:text-black transition">Todos</button>
+                <button onclick="filterLeads('residential')" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase hover:gold-bg hover:text-black transition italic">Residencial</button>
+                <button onclick="filterLeads('commercial')" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase hover:gold-bg hover:text-black transition italic">Comercial</button>
+                <button onclick="filterLeads('permits')" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase hover:gold-bg hover:text-black transition italic">Permisos</button>
+            </div>
+
+            <!-- Grid de Leads Orquestados -->
+            <div id="leads-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Se inyecta por JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal de Compra (Simulación Orquestador) -->
+    <div id="buy-modal" class="hidden fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-6">
+        <div class="glass max-w-lg w-full p-10 rounded-[3rem] text-center relative">
+            <button onclick="closeModal()" class="absolute top-6 right-8 text-zinc-500 text-2xl font-light">&times;</button>
+            <div class="inline-block p-4 gold-bg rounded-2xl mb-6">
+                <svg class="w-8 h-8 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h2 class="text-3xl font-black italic uppercase mb-4">Adquirir Lead <span class="gold-text">Exclusivo</span></h2>
+            <p class="text-zinc-400 text-sm mb-8">Una vez comprado, el lead desaparece del mercado. Recibirás los datos en tu dashboard y por email inmediatamente.</p>
+            
+            <div class="bg-zinc-900/50 p-6 rounded-2xl mb-8 border border-white/5">
+                <p class="text-[10px] text-zinc-500 font-black uppercase mb-1">Inversión de Acceso</p>
+                <p id="modal-price" class="text-5xl font-black gold-text italic tracking-tighter">$0.00</p>
+            </div>
+
+            <button onclick="finalBuy()" class="w-full gold-bg text-black font-black py-5 rounded-2xl text-lg shadow-2xl uppercase tracking-widest hover:scale-105 transition">
+                Pagar con PayPal Secure
+            </button>
+            <p class="mt-4 text-[9px] text-zinc-600 font-bold italic tracking-widest uppercase italic">Protección PARTTH Intelligence 100% Garantizada</p>
+        </div>
+    </div>
+
+    <script>
+        // --- ORQUESTADOR LÓGICA (INTELIGENCIA) ---
+
+        const PRICING_MATRIX = {
+            residential: { base: 35, roofing: 55, hvac: 45, solar: 65, pool: 70 },
+            commercial: { base: 150, new_build: 250, roofing: 200, hvac: 180 },
+            permits: { base: 65, demolition: 90, new_con: 100 }
+        };
+
+        const TEXAS_LEADS = [
+            { id: 101, type: 'commercial', sub: 'new_build', title: 'Nueva Plaza Comercial Harris', loc: 'Houston, TX', budget: '$2.4M', score: 98 },
+            { id: 102, type: 'residential', sub: 'hvac', title: 'Instalación HVAC Mansión Dallas', loc: 'Dallas, TX', budget: '$12.5k', score: 85 },
+            { id: 103, type: 'permits', sub: 'new_con', title: 'Permiso Nueva Residencia Austin', loc: 'Austin, TX', budget: '$850k Est', score: 92 },
+            { id: 104, type: 'residential', sub: 'roofing', title: 'Techo Teja San Antonio', loc: 'San Antonio, TX', budget: '$28k', score: 79 },
+            { id: 105, type: 'commercial', sub: 'roofing', title: 'Nave Industrial (Techo Acero)', loc: 'Fort Worth, TX', budget: '$450k', score: 95 },
+            { id: 106, type: 'permits', sub: 'demolition', title: 'Demolición Comercial Plano', loc: 'Plano, TX', budget: 'N/A', score: 88 }
+        ];
+
+        function orchestrateAccess() {
+            const email = document.getElementById('email-access').value;
+            if(!email.includes('@')) return alert('Acceso denegado. Se requiere email corporativo.');
+            
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('user-tag').innerText = email.toUpperCase();
+            
+            renderLeads('all');
+            fbq('track', 'CompleteRegistration'); // Meta Pixel Event
+        }
+
+        function calculatePrice(type, sub) {
+            let base = PRICING_MATRIX[type][sub] || PRICING_MATRIX[type].base;
+            // Orquestador aplica multiplicador dinámico x1.2 por exclusividad de mercado
+            return (base * 1.2).toFixed(0);
+        }
+
+        function renderLeads(category) {
+            const grid = document.getElementById('leads-grid');
+            const filtered = category === 'all' ? TEXAS_LEADS : TEXAS_LEADS.filter(l => l.type === category);
+            
+            grid.innerHTML = filtered.map(lead => {
+                const price = calculatePrice(lead.type, lead.sub);
+                return `
+                    <div class="glass p-8 rounded-[2.5rem] flex flex-col hover:border-[#D4AF37] transition-all group">
+                        <div class="flex justify-between items-start mb-8">
+                            <span class="exclusive-badge">EXCLUSIVO TEXAS</span>
+                            <span class="text-[9px] text-zinc-500 font-black uppercase tracking-widest italic leading-none text-right">Scoring Partth<br><span class="text-white text-sm">#${lead.score}/100</span></span>
+                        </div>
+
+                        <h3 class="text-2xl font-black uppercase italic leading-tight mb-2 group-hover:gold-text transition">${lead.title}</h3>
+                        <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-8 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#D4AF37]" fill="currentColor" viewBox="0 0 20 20"><path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"></path></svg>
+                            ${lead.loc}
+                        </p>
+
+                        <div class="bg-black/40 p-5 rounded-2xl mb-8 border border-white/5">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-[9px] text-zinc-600 font-black uppercase mb-1">Presupuesto</p>
+                                    <p class="text-lg font-black">${lead.budget}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-[9px] text-zinc-600 font-black uppercase mb-1">Tipo</p>
+                                    <p class="text-[10px] font-black italic gold-text">${lead.type.toUpperCase()}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto flex items-center justify-between pt-6 border-t border-white/5">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] text-zinc-600 font-black uppercase">Acceso Único</span>
+                                <span class="text-4xl font-black italic tracking-tighter">$${price}</span>
+                            </div>
+                            <button onclick="openBuyModal(${price})" class="gold-bg text-black font-black px-6 py-3 rounded-xl hover:scale-105 transition text-xs shadow-lg shadow-yellow-950/40">
+                                ADQUIRIR
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterLeads(cat) { renderLeads(cat); }
+
+        function openBuyModal(price) {
+            document.getElementById('modal-price').innerText = '$' + price + '.00';
+            document.getElementById('buy-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('buy-modal').classList.add('hidden'); }
+
+        function finalBuy() {
+            alert('REDIRECCIÓN A PASARELA DE PAGO...\n\nComo orquestador, una vez confirmado el pago, MillionVerifier validará los datos y Resend te enviará la información de contacto inmediatamente.');
+            closeModal();
+            fbq('track', 'Purchase', {currency: 'USD', value: 0.00});
+        }
+    </script>
+</body>
+</html>
